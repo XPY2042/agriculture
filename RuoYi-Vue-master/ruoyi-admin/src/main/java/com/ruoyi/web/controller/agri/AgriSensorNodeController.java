@@ -1,8 +1,10 @@
 package com.ruoyi.web.controller.agri;
 
+import java.util.Collections;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -18,6 +20,7 @@ import com.ruoyi.common.core.domain.AjaxResult;
 import com.ruoyi.common.core.page.TableDataInfo;
 import com.ruoyi.common.enums.BusinessType;
 import com.ruoyi.common.utils.SecurityUtils;
+import com.ruoyi.common.utils.poi.ExcelUtil;
 import com.ruoyi.common.utils.StringUtils;
 import com.ruoyi.system.domain.AgriSensorNode;
 import com.ruoyi.system.service.IAgriSensorNodeService;
@@ -36,11 +39,17 @@ public class AgriSensorNodeController extends BaseController
     @GetMapping("/list")
     public TableDataInfo list(AgriSensorNode node)
     {
-        if (!SecurityUtils.isAdmin())
+        if (SecurityUtils.isAdmin())
+        {
+            if (StringUtils.isEmpty(node.getCreateBy()))
+            {
+                return getDataTable(Collections.emptyList());
+            }
+        }
+        else
         {
             node.setCreateBy(getUsername());
         }
-        // 管理员不传 createBy 时展示全部节点，传了则按用户筛选
         startPage();
         List<AgriSensorNode> list = agriSensorNodeService.selectAgriSensorNodeList(node);
         return getDataTable(list);
@@ -93,20 +102,6 @@ public class AgriSensorNodeController extends BaseController
         return toAjax(agriSensorNodeService.updateAgriSensorNode(node));
     }
 
-    @PreAuthorize("@ss.hasPermi('agri:monitor:view')")
-    @GetMapping("/heatmap")
-    public AjaxResult heatmap()
-    {
-        List<AgriSensorNode> list = agriSensorNodeService.selectNodeHeatmap();
-        if (!SecurityUtils.isAdmin())
-        {
-            String username = getUsername();
-            list = list.stream().filter(n -> StringUtils.equals(n.getCreateBy(), username))
-                    .collect(java.util.stream.Collectors.toList());
-        }
-        return success(list);
-    }
-
     @PreAuthorize("@ss.hasPermi('agri:node:remove')")
     @Log(title = "传感节点", businessType = BusinessType.DELETE)
     @DeleteMapping("/{nodeIds}")
@@ -118,5 +113,15 @@ public class AgriSensorNodeController extends BaseController
             agriSensorNodeService.checkAgriSensorNodeOwner(existing, getUsername(), SecurityUtils.isAdmin());
         }
         return toAjax(agriSensorNodeService.deleteAgriSensorNodeByIds(nodeIds));
+    }
+
+    @PreAuthorize("@ss.hasPermi('agri:node:list') or @ss.hasPermi('agri:node:query')")
+    @Log(title = "传感节点", businessType = BusinessType.EXPORT)
+    @PostMapping("/export")
+    public void export(HttpServletResponse response, AgriSensorNode node)
+    {
+        List<AgriSensorNode> list = agriSensorNodeService.selectAgriSensorNodeList(node);
+        ExcelUtil<AgriSensorNode> util = new ExcelUtil<AgriSensorNode>(AgriSensorNode.class);
+        util.exportExcel(response, list, "传感节点");
     }
 }

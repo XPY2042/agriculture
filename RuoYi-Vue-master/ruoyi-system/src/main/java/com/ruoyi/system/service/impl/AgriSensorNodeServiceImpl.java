@@ -73,10 +73,4 @@ public class AgriSensorNodeServiceImpl implements IAgriSensorNodeService
             throw new ServiceException("无权访问该传感节点");
         }
     }
-
-    @Override
-    public List<AgriSensorNode> selectNodeHeatmap()
-    {
-        return agriSensorNodeMapper.selectNodeHeatmap();
-    }
 }

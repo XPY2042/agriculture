@@ -4,39 +4,41 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
+import com.ruoyi.common.annotation.Excel;
 import com.ruoyi.common.core.domain.BaseEntity;
 
 /**
- * ũҵ���������нڵ� agri_sensor_node
+ * 农业传感器节点 agri_sensor_node
  */
 public class AgriSensorNode extends BaseEntity
 {
     private static final long serialVersionUID = 1L;
 
+    @Excel(name = "节点ID", cellType = Excel.ColumnType.NUMERIC)
     private Long nodeId;
 
-    @NotBlank(message = "�豸���벻��Ϊ��")
-    @Size(max = 64, message = "�豸���벻�ܳ���64���ַ�")
+    @Excel(name = "设备编码")
+    @NotBlank(message = "设备编码不能为空")
+    @Size(max = 64, message = "设备编码不能超过64个字符")
     private String nodeCode;
 
-    @NotBlank(message = "�ڵ����Ʋ���Ϊ��")
-    @Size(max = 100, message = "�ڵ����Ʋ��ܳ���100���ַ�")
+    @Excel(name = "节点名称")
+    @NotBlank(message = "节点名称不能为空")
+    @Size(max = 100, message = "节点名称不能超过100个字符")
     private String nodeName;
 
-    @Size(max = 200, message = "λ���������ܳ���200���ַ�")
+    @Excel(name = "位置")
+    @Size(max = 200, message = "位置名称不能超过200个字符")
     private String plotLocation;
 
-    @Size(max = 64, message = "�������Ͳ��ܳ���64���ַ�")
+    @Excel(name = "作物类型")
+    @Size(max = 64, message = "作物类型不能超过64个字符")
     private String cropType;
 
+    @Excel(name = "状态", readConverterExp = "0=正常,1=离线")
     private String status;
 
     private String delFlag;
-
-    /** 热力图：未处理告警数 */
-    private Integer alarmCount;
-    /** 热力图：最高告警级别 1=警告 2=危险 */
-    private String maxAlarmLevel;
 
     public Long getNodeId()
     {
@@ -106,26 +108,6 @@ public class AgriSensorNode extends BaseEntity
     public void setDelFlag(String delFlag)
     {
         this.delFlag = delFlag;
-    }
-
-    public Integer getAlarmCount()
-    {
-        return alarmCount;
-    }
-
-    public void setAlarmCount(Integer alarmCount)
-    {
-        this.alarmCount = alarmCount;
-    }
-
-    public String getMaxAlarmLevel()
-    {
-        return maxAlarmLevel;
-    }
-
-    public void setMaxAlarmLevel(String maxAlarmLevel)
-    {
-        this.maxAlarmLevel = maxAlarmLevel;
     }
 
     @Override

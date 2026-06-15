@@ -22,7 +22,4 @@ public interface IAgriSensorNodeService
 
     /** 校验当前用户是否有权访问该节点（管理员跳过） */
     void checkAgriSensorNodeOwner(AgriSensorNode node, String currentUsername, boolean admin);
-
-    /** 热力图：全部正常节点及告警汇总 */
-    List<AgriSensorNode> selectNodeHeatmap();
 }

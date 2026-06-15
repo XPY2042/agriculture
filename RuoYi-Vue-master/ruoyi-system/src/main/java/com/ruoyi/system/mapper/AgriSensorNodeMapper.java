@@ -21,6 +21,4 @@ public interface AgriSensorNodeMapper
     int deleteAgriSensorNodeByIds(Long[] nodeIds);
 
     AgriSensorNode checkNodeCodeUnique(String nodeCode);
-
-    List<AgriSensorNode> selectNodeHeatmap();
 }

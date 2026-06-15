@@ -23,7 +23,6 @@ import com.ruoyi.common.core.domain.entity.SysDept;
 import com.ruoyi.common.core.domain.entity.SysRole;
 import com.ruoyi.common.core.domain.entity.SysUser;
 import com.ruoyi.common.core.page.TableDataInfo;
-import com.ruoyi.common.constant.UserConstants;
 import com.ruoyi.common.enums.BusinessType;
 import com.ruoyi.common.utils.SecurityUtils;
 import com.ruoyi.common.utils.DateUtils;
@@ -148,9 +147,6 @@ public class SysUserController extends BaseController
         {
             return error("新增用户'" + user.getUserName() + "'失败，请至少分配一个角色");
         }
-        user.setUserName(StringUtils.trim(user.getUserName()));
-        user.setPassword(StringUtils.trim(user.getPassword()));
-        user.setDelFlag(UserConstants.NORMAL);
         user.setCreateBy(getUsername());
         user.setPassword(SecurityUtils.encryptPassword(user.getPassword()));
         user.setPwdUpdateDate(DateUtils.getNowDate());

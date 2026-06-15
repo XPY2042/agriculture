@@ -14,7 +14,6 @@ public class RuoYiApplication
 {
     public static void main(String[] args)
     {
-        System.setProperty("file.encoding", "UTF-8");
         // System.setProperty("spring.devtools.restart.enabled", "false");
         SpringApplication.run(RuoYiApplication.class, args);
         System.out.println("智慧农业监测系统已启动");

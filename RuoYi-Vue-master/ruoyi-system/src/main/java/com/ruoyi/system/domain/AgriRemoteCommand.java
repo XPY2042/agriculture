@@ -4,24 +4,37 @@ import java.util.Date;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.ruoyi.common.annotation.Excel;
 import com.ruoyi.common.core.domain.BaseEntity;
 
 /**
- * Զ���豸����ָ�� agri_remote_command
+ * 远程设备控制指令 agri_remote_command
  */
 public class AgriRemoteCommand extends BaseEntity
 {
     private static final long serialVersionUID = 1L;
 
+    @Excel(name = "指令ID", cellType = Excel.ColumnType.NUMERIC)
     private Long commandId;
+
     private Long nodeId;
+
+    @Excel(name = "目标节点")
     private String nodeName;
+
+    @Excel(name = "指令类型")
     private String commandType;
+
+    @Excel(name = "指令名称")
     private String commandLabel;
-    /** 0��ִ�� 1�ɹ� 2ʧ�� */
+
+    @Excel(name = "状态", readConverterExp = "0=未执行,1=成功,2=失败")
     private String status;
+
+    @Excel(name = "返回结果")
     private String resultMessage;
 
+    @Excel(name = "执行时间", width = 30, dateFormat = "yyyy-MM-dd HH:mm:ss")
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private Date executeTime;
 

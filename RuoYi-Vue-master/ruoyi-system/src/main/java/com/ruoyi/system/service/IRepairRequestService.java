@@ -22,7 +22,14 @@ public interface IRepairRequestService
 
     int deleteRepairRequestByIds(Long[] requestIds);
 
-    int countRepairRequest(RepairRequest repairRequest);
-
     void checkRepairRequestOwner(RepairRequest repairRequest, Long currentUserId, boolean admin);
+
+    // ====== 维修人员专用 ======
+    List<RepairRequest> selectTechnicianPool(RepairRequest repairRequest);
+    List<RepairRequest> selectTechnicianAssigned(RepairRequest repairRequest);
+    List<RepairRequest> selectTechnicianHistory(RepairRequest repairRequest);
+    int acceptRepairRequest(RepairRequest repairRequest);
+    int startRepairRequest(RepairRequest repairRequest);
+    int completeRepairRequest(RepairRequest repairRequest);
+    void checkTechnicianOwner(RepairRequest repairRequest, Long currentUserId);
 }

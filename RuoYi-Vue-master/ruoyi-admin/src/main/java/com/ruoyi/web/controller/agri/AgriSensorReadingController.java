@@ -1,8 +1,12 @@
 package com.ruoyi.web.controller.agri;
+import com.ruoyi.common.utils.poi.ExcelUtil;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.Date;
+import jakarta.servlet.http.HttpServletResponse;
+import com.ruoyi.common.utils.poi.ExcelUtil;
+
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
@@ -186,5 +190,15 @@ public class AgriSensorReadingController extends BaseController
     private static BigDecimal bd(int v, int scale)
     {
         return BigDecimal.valueOf(v).divide(BigDecimal.valueOf(scale), 2, RoundingMode.HALF_UP);
+    }
+
+    @PreAuthorize("@ss.hasPermi('agri:monitor:view')")
+    @Log(title = "传感器数据", businessType = BusinessType.EXPORT)
+    @PostMapping("/export")
+    public void export(HttpServletResponse response, AgriSensorReading reading)
+    {
+        List<AgriSensorReading> list = agriSensorReadingService.selectAgriSensorReadingList(reading);
+        ExcelUtil<AgriSensorReading> util = new ExcelUtil<AgriSensorReading>(AgriSensorReading.class);
+        util.exportExcel(response, list, "传感器数据");
     }
 }

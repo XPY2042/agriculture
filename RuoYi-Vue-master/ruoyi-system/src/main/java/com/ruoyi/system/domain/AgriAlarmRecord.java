@@ -4,6 +4,7 @@ import java.util.Date;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.ruoyi.common.annotation.Excel;
 import com.ruoyi.common.core.domain.BaseEntity;
 
 /**
@@ -13,26 +14,37 @@ public class AgriAlarmRecord extends BaseEntity
 {
     private static final long serialVersionUID = 1L;
 
+    @Excel(name = "告警ID", cellType = Excel.ColumnType.NUMERIC)
     private Long alarmId;
     private Long nodeId;
+    @Excel(name = "传感器节点")
     private String nodeName;
     private Long readingId;
+    @Excel(name = "指标编码")
     private String metricCode;
+    @Excel(name = "指标名称")
     private String metricName;
-    /** 1���� 2���� */
+    @Excel(name = "告警级别", readConverterExp = "1=警告,2=严重")
     private String alarmLevel;
+    @Excel(name = "方向", readConverterExp = "up=高于上限,down=低于下限")
     private String direction;
+    @Excel(name = "实际值")
     private String actualValue;
+    @Excel(name = "阈值")
     private String thresholdValue;
+    @Excel(name = "告警描述")
     private String alarmMessage;
-    /** 0δ���� 1��ȷ�� */
+    @Excel(name = "状态", readConverterExp = "0=未处理,1=已确认")
     private String status;
 
+    @Excel(name = "告警时间", width = 30, dateFormat = "yyyy-MM-dd HH:mm:ss")
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private Date alarmTime;
 
+    @Excel(name = "处理人")
     private String handleBy;
 
+    @Excel(name = "处理时间", width = 30, dateFormat = "yyyy-MM-dd HH:mm:ss")
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private Date handleTime;
 
