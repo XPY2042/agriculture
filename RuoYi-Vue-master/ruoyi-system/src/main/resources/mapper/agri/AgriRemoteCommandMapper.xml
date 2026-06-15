@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.system.mapper.AgriRemoteCommandMapper">
+
+    <resultMap type="AgriRemoteCommand" id="AgriRemoteCommandResult">
+        <id     property="commandId"      column="command_id"/>
+        <result property="nodeId"         column="node_id"/>
+        <result property="nodeName"       column="node_name"/>
+        <result property="commandType"    column="command_type"/>
+        <result property="commandLabel"   column="command_label"/>
+        <result property="status"         column="status"/>
+        <result property="resultMessage"  column="result_message"/>
+        <result property="createBy"       column="create_by"/>
+        <result property="createTime"     column="create_time"/>
+        <result property="executeTime"    column="execute_time"/>
+    </resultMap>
+
+    <sql id="selectVo">
+        select c.command_id, c.node_id, n.node_name, c.command_type, c.command_label,
+               c.status, c.result_message, c.create_by, c.create_time, c.execute_time
+        from agri_remote_command c
+        left join agri_sensor_node n on c.node_id = n.node_id and n.del_flag = '0'
+    </sql>
+
+    <select id="selectAgriRemoteCommandById" resultMap="AgriRemoteCommandResult">
+        <include refid="selectVo"/>
+        where c.command_id = #{commandId}
+    </select>
+
+    <select id="selectAgriRemoteCommandList" parameterType="AgriRemoteCommand" resultMap="AgriRemoteCommandResult">
+        <include refid="selectVo"/>
+        <where>
+            <if test="nodeId != null">and c.node_id = #{nodeId}</if>
+            <if test="commandType != null and commandType != ''">and c.command_type = #{commandType}</if>
+            <if test="status != null and status != ''">and c.status = #{status}</if>
+            <if test="createBy != null and createBy != ''">and c.create_by = #{createBy}</if>
+        </where>
+        order by c.create_time desc, c.command_id desc
+    </select>
+
+    <insert id="insertAgriRemoteCommand" parameterType="AgriRemoteCommand" useGeneratedKeys="true" keyProperty="commandId">
+        insert into agri_remote_command (
+            node_id, command_type, command_label, status, result_message,
+            create_by, create_time, execute_time
+        ) values (
+            #{nodeId}, #{commandType}, #{commandLabel}, #{status}, #{resultMessage},
+            #{createBy}, #{createTime}, #{executeTime}
+        )
+    </insert>
+
+    <update id="updateAgriRemoteCommand" parameterType="AgriRemoteCommand">
+        update agri_remote_command
+        <set>
+            <if test="status != null">status = #{status},</if>
+            <if test="resultMessage != null">result_message = #{resultMessage},</if>
+            <if test="executeTime != null">execute_time = #{executeTime},</if>
+        </set>
+        where command_id = #{commandId}
+    </update>
+
+</mapper>

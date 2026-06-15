@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.system.mapper.RepairRequestMapper">
+
+    <resultMap type="RepairRequest" id="RepairRequestResult">
+        <id     property="requestId"     column="request_id"/>
+        <result property="userId"        column="user_id"/>
+        <result property="title"         column="title"/>
+        <result property="description"   column="description"/>
+        <result property="location"      column="location"/>
+        <result property="contactPhone"  column="contact_phone"/>
+        <result property="status"        column="status"/>
+        <result property="adminReply"    column="admin_reply"/>
+        <result property="delFlag"       column="del_flag"/>
+        <result property="userName"      column="user_name"/>
+        <result property="createBy"      column="create_by"/>
+        <result property="createTime"    column="create_time"/>
+        <result property="updateBy"      column="update_by"/>
+        <result property="updateTime"    column="update_time"/>
+        <result property="remark"        column="remark"/>
+    </resultMap>
+
+    <sql id="selectVo">
+        select r.request_id, r.user_id, r.title, r.description, r.location, r.contact_phone,
+               r.status, r.admin_reply, r.del_flag, r.create_by, r.create_time, r.update_by,
+               r.update_time, r.remark, u.nick_name as user_name
+        from repair_request r
+        left join sys_user u on r.user_id = u.user_id
+    </sql>
+
+    <select id="selectRepairRequestById" resultMap="RepairRequestResult">
+        <include refid="selectVo"/>
+        where r.request_id = #{requestId} and r.del_flag = '0'
+    </select>
+
+    <select id="selectRepairRequestList" parameterType="RepairRequest" resultMap="RepairRequestResult">
+        <include refid="selectVo"/>
+        <where>
+            r.del_flag = '0'
+            <if test="userId != null">and r.user_id = #{userId}</if>
+            <if test="title != null and title != ''">and r.title like concat('%', #{title}, '%')</if>
+            <if test="location != null and location != ''">and r.location like concat('%', #{location}, '%')</if>
+            <if test="status != null and status != ''">and r.status = #{status}</if>
+            <if test="createBy != null and createBy != ''">and r.create_by like concat('%', #{createBy}, '%')</if>
+        </where>
+        order by r.request_id desc
+    </select>
+
+    <insert id="insertRepairRequest" parameterType="RepairRequest" useGeneratedKeys="true" keyProperty="requestId">
+        insert into repair_request (
+            user_id, title, description, location, contact_phone, status, admin_reply, del_flag,
+            create_by, create_time, remark
+        ) values (
+            #{userId}, #{title}, #{description}, #{location}, #{contactPhone},
+            #{status}, #{adminReply}, '0', #{createBy}, sysdate(), #{remark}
+        )
+    </insert>
+
+    <update id="updateRepairRequest" parameterType="RepairRequest">
+        update repair_request
+        <set>
+            <if test="title != null and title != ''">title = #{title},</if>
+            <if test="description != null">description = #{description},</if>
+            <if test="location != null">location = #{location},</if>
+            <if test="contactPhone != null">contact_phone = #{contactPhone},</if>
+            <if test="status != null and status != ''">status = #{status},</if>
+            <if test="adminReply != null">admin_reply = #{adminReply},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
+            update_time = sysdate()
+        </set>
+        where request_id = #{requestId}
+    </update>
+
+    <update id="deleteRepairRequestById">
+        update repair_request set del_flag = '2' where request_id = #{requestId}
+    </update>
+
+    <update id="deleteRepairRequestByIds">
+        update repair_request set del_flag = '2' where request_id in
+        <foreach collection="array" item="id" open="(" separator="," close=")">#{id}</foreach>
+    </update>
+
+    <select id="countRepairRequest" parameterType="RepairRequest" resultType="int">
+        select count(*) from repair_request r
+        <where>
+            r.del_flag = '0'
+            <if test="userId != null">and r.user_id = #{userId}</if>
+            <if test="status != null and status != ''">and r.status = #{status}</if>
+        </where>
+    </select>
+</mapper>

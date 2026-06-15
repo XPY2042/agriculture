@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.system.mapper.AgriAlarmRecordMapper">
+
+    <resultMap type="AgriAlarmRecord" id="AgriAlarmRecordResult">
+        <id     property="alarmId"         column="alarm_id"/>
+        <result property="nodeId"          column="node_id"/>
+        <result property="nodeName"        column="node_name"/>
+        <result property="readingId"       column="reading_id"/>
+        <result property="metricCode"      column="metric_code"/>
+        <result property="metricName"      column="metric_name"/>
+        <result property="alarmLevel"      column="alarm_level"/>
+        <result property="direction"       column="direction"/>
+        <result property="actualValue"     column="actual_value"/>
+        <result property="thresholdValue"  column="threshold_value"/>
+        <result property="alarmMessage"    column="alarm_message"/>
+        <result property="status"          column="status"/>
+        <result property="alarmTime"       column="alarm_time"/>
+        <result property="handleBy"        column="handle_by"/>
+        <result property="handleTime"      column="handle_time"/>
+        <result property="createTime"      column="create_time"/>
+    </resultMap>
+
+    <sql id="selectVo">
+        select a.alarm_id, a.node_id, n.node_name, a.reading_id, a.metric_code, a.metric_name,
+               a.alarm_level, a.direction, a.actual_value, a.threshold_value, a.alarm_message,
+               a.status, a.alarm_time, a.handle_by, a.handle_time, a.create_time
+        from agri_alarm_record a
+        left join agri_sensor_node n on a.node_id = n.node_id and n.del_flag = '0'
+    </sql>
+
+    <select id="selectAgriAlarmRecordById" resultMap="AgriAlarmRecordResult">
+        <include refid="selectVo"/>
+        where a.alarm_id = #{alarmId}
+    </select>
+
+    <select id="selectAgriAlarmRecordList" parameterType="AgriAlarmRecord" resultMap="AgriAlarmRecordResult">
+        <include refid="selectVo"/>
+        <where>
+            <if test="nodeId != null">and a.node_id = #{nodeId}</if>
+            <if test="metricCode != null and metricCode != ''">and a.metric_code = #{metricCode}</if>
+            <if test="alarmLevel != null and alarmLevel != ''">and a.alarm_level = #{alarmLevel}</if>
+            <if test="status != null and status != ''">and a.status = #{status}</if>
+            <if test="params != null and params.beginTime != null and params.beginTime != ''">
+                and a.alarm_time &gt;= #{params.beginTime}
+            </if>
+            <if test="params != null and params.endTime != null and params.endTime != ''">
+                and a.alarm_time &lt;= #{params.endTime}
+            </if>
+        </where>
+        order by a.alarm_time desc, a.alarm_id desc
+    </select>
+
+    <select id="countUnhandled" resultType="int">
+        select count(*) from agri_alarm_record where status = '0'
+    </select>
+
+    <select id="countRecentSameAlarm" resultType="int">
+        select count(*) from agri_alarm_record
+        where node_id = #{nodeId}
+          and metric_code = #{metricCode}
+          and alarm_level = #{alarmLevel}
+          and alarm_time &gt;= date_sub(now(), interval #{cooldownMinutes} minute)
+    </select>
+
+    <insert id="insertAgriAlarmRecord" parameterType="AgriAlarmRecord" useGeneratedKeys="true" keyProperty="alarmId">
+        insert into agri_alarm_record (
+            node_id, reading_id, metric_code, metric_name, alarm_level, direction,
+            actual_value, threshold_value, alarm_message, status, alarm_time, create_time
+        ) values (
+            #{nodeId}, #{readingId}, #{metricCode}, #{metricName}, #{alarmLevel}, #{direction},
+            #{actualValue}, #{thresholdValue}, #{alarmMessage}, #{status}, #{alarmTime}, sysdate()
+        )
+    </insert>
+
+    <update id="updateAgriAlarmRecordStatus" parameterType="AgriAlarmRecord">
+        update agri_alarm_record
+        set status = #{status},
+            handle_by = #{handleBy},
+            handle_time = #{handleTime}
+        where alarm_id = #{alarmId}
+    </update>
+</mapper>

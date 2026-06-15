@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.system.mapper.AgriSensorReadingMapper">
+
+    <resultMap type="AgriSensorReading" id="AgriSensorReadingResult">
+        <id     property="readingId"        column="reading_id"/>
+        <result property="nodeId"           column="node_id"/>
+        <result property="soilMoisturePct"  column="soil_moisture_pct"/>
+        <result property="airTempC"         column="air_temp_c"/>
+        <result property="airHumidityPct"   column="air_humidity_pct"/>
+        <result property="lightLux"         column="light_lux"/>
+        <result property="soilTempC"        column="soil_temp_c"/>
+        <result property="readingTime"      column="reading_time"/>
+        <result property="createTime"       column="create_time"/>
+    </resultMap>
+
+    <sql id="selectVo">
+        select reading_id, node_id, soil_moisture_pct, air_temp_c, air_humidity_pct, light_lux, soil_temp_c, reading_time, create_time
+        from agri_sensor_reading
+    </sql>
+
+    <select id="selectLatestByNodeId" resultMap="AgriSensorReadingResult">
+        <include refid="selectVo"/>
+        where node_id = #{nodeId}
+        order by reading_time desc
+        limit 1
+    </select>
+
+    <select id="selectTrendByNodeId" resultMap="AgriSensorReadingResult">
+        <include refid="selectVo"/>
+        where node_id = #{nodeId}
+          and reading_time &gt;= date_sub(now(), interval #{hours} hour)
+        order by reading_time asc
+    </select>
+
+    <select id="selectAgriSensorReadingList" parameterType="AgriSensorReading" resultMap="AgriSensorReadingResult">
+        <include refid="selectVo"/>
+        <where>
+            <if test="nodeId != null">and node_id = #{nodeId}</if>
+        </where>
+        order by reading_time desc
+    </select>
+
+    <resultMap type="com.ruoyi.system.domain.vo.AgriReadingAggregateVo" id="AgriReadingAggregateResult">
+        <result property="avgSoilMoisturePct" column="avg_soil_moisture_pct"/>
+        <result property="avgAirTempC" column="avg_air_temp_c"/>
+        <result property="avgAirHumidityPct" column="avg_air_humidity_pct"/>
+        <result property="avgLightLux" column="avg_light_lux"/>
+        <result property="avgSoilTempC" column="avg_soil_temp_c"/>
+    </resultMap>
+
+    <select id="selectAvgInWindow" resultMap="AgriReadingAggregateResult">
+        select avg(soil_moisture_pct) as avg_soil_moisture_pct,
+               avg(air_temp_c) as avg_air_temp_c,
+               avg(air_humidity_pct) as avg_air_humidity_pct,
+               avg(light_lux) as avg_light_lux,
+               avg(soil_temp_c) as avg_soil_temp_c
+        from agri_sensor_reading
+        where node_id = #{nodeId}
+          and reading_time &gt;= date_sub(now(), interval #{hours} hour)
+    </select>
+
+    <insert id="insertAgriSensorReading" parameterType="AgriSensorReading" useGeneratedKeys="true" keyProperty="readingId">
+        insert into agri_sensor_reading (
+            node_id, soil_moisture_pct, air_temp_c, air_humidity_pct, light_lux, soil_temp_c, reading_time, create_time
+        ) values (
+            #{nodeId}, #{soilMoisturePct}, #{airTempC}, #{airHumidityPct}, #{lightLux}, #{soilTempC}, #{readingTime}, sysdate()
+        )
+    </insert>
+
+    <delete id="deleteAgriSensorReadingByIds">
+        delete from agri_sensor_reading where reading_id in
+        <foreach collection="array" item="id" open="(" separator="," close=")">#{id}</foreach>
+    </delete>
+</mapper>

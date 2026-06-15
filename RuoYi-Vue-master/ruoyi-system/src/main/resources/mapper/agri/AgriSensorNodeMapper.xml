@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.system.mapper.AgriSensorNodeMapper">
+
+    <resultMap type="AgriSensorNode" id="AgriSensorNodeResult">
+        <id     property="nodeId"        column="node_id"/>
+        <result property="nodeCode"      column="node_code"/>
+        <result property="nodeName"      column="node_name"/>
+        <result property="plotLocation"  column="plot_location"/>
+        <result property="cropType"      column="crop_type"/>
+        <result property="status"        column="status"/>
+        <result property="delFlag"       column="del_flag"/>
+        <result property="createBy"      column="create_by"/>
+        <result property="createTime"    column="create_time"/>
+        <result property="updateBy"      column="update_by"/>
+        <result property="updateTime"    column="update_time"/>
+        <result property="remark"        column="remark"/>
+        <result property="alarmCount"    column="alarm_count"/>
+        <result property="maxAlarmLevel" column="max_alarm_level"/>
+    </resultMap>
+
+    <sql id="selectVo">
+        select node_id, node_code, node_name, plot_location, crop_type, status, del_flag,
+               create_by, create_time, update_by, update_time, remark
+        from agri_sensor_node
+    </sql>
+
+    <select id="selectAgriSensorNodeById" resultMap="AgriSensorNodeResult">
+        <include refid="selectVo"/>
+        where node_id = #{nodeId} and del_flag = '0'
+    </select>
+
+    <select id="selectAgriSensorNodeList" parameterType="AgriSensorNode" resultMap="AgriSensorNodeResult">
+        <include refid="selectVo"/>
+        <where>
+            del_flag = '0'
+            <if test="nodeCode != null and nodeCode != ''">and node_code like concat('%', #{nodeCode}, '%')</if>
+            <if test="nodeName != null and nodeName != ''">and node_name like concat('%', #{nodeName}, '%')</if>
+            <if test="plotLocation != null and plotLocation != ''">and plot_location like concat('%', #{plotLocation}, '%')</if>
+            <if test="cropType != null and cropType != ''">and crop_type like concat('%', #{cropType}, '%')</if>
+            <if test="status != null and status != ''">and status = #{status}</if>
+            <if test="createBy != null and createBy != ''">and create_by = #{createBy}</if>
+        </where>
+        order by node_id desc
+    </select>
+
+    <select id="checkNodeCodeUnique" resultMap="AgriSensorNodeResult">
+        <include refid="selectVo"/>
+        where node_code = #{nodeCode} and del_flag = '0' limit 1
+    </select>
+
+    <insert id="insertAgriSensorNode" parameterType="AgriSensorNode" useGeneratedKeys="true" keyProperty="nodeId">
+        insert into agri_sensor_node (
+            node_code, node_name, plot_location, crop_type, status, del_flag,
+            create_by, create_time, remark
+        ) values (
+            #{nodeCode}, #{nodeName}, #{plotLocation}, #{cropType}, #{status}, '0',
+            #{createBy}, sysdate(), #{remark}
+        )
+    </insert>
+
+    <update id="updateAgriSensorNode" parameterType="AgriSensorNode">
+        update agri_sensor_node
+        <set>
+            <if test="nodeCode != null and nodeCode != ''">node_code = #{nodeCode},</if>
+            <if test="nodeName != null and nodeName != ''">node_name = #{nodeName},</if>
+            <if test="plotLocation != null">plot_location = #{plotLocation},</if>
+            <if test="cropType != null">crop_type = #{cropType},</if>
+            <if test="status != null and status != ''">status = #{status},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
+            update_time = sysdate()
+        </set>
+        where node_id = #{nodeId}
+    </update>
+
+    <update id="deleteAgriSensorNodeById">
+        update agri_sensor_node set del_flag = '2' where node_id = #{nodeId}
+    </update>
+
+    <select id="selectNodeHeatmap" resultMap="AgriSensorNodeResult">
+        select n.node_id, n.node_code, n.node_name, n.plot_location, n.crop_type, n.status, n.del_flag,
+               n.create_by, n.create_time, n.update_by, n.update_time, n.remark,
+               coalesce(a.alarm_count, 0) as alarm_count,
+               a.max_alarm_level
+        from agri_sensor_node n
+        left join (
+            select node_id, count(*) as alarm_count, max(alarm_level) as max_alarm_level
+            from agri_alarm_record
+            where status = '0'
+            group by node_id
+        ) a on a.node_id = n.node_id
+        where n.del_flag = '0' and n.status = '0'
+        order by n.plot_location, n.node_id
+    </select>
+
+    <update id="deleteAgriSensorNodeById">
+        update agri_sensor_node set del_flag = '2' where node_id = #{nodeId}
+    </update>
+
+    <update id="deleteAgriSensorNodeByIds">
+        update agri_sensor_node set del_flag = '2' where node_id in
+        <foreach collection="array" item="id" open="(" separator="," close=")">#{id}</foreach>
+    </update>
+</mapper>

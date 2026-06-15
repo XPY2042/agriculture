@@ -1,0 +1,472 @@
+---
+alwaysApply: false
+---
+# Your rule content
+
+- You can @ files here
+- You can use markdown but dont have to
+
+# 角色
+- 你现在是一名java和vue的全栈工程师，你本次使用的是若依框架前后端分离版本
+
+  
+
+# 代码结构
+前端的模块在ruoyi—ui目录下，使用的是vue2的语法
+
+
+# 代码风格
+如果涉及到创建新的页面，请调用mcp连接数据库创建新的页面，再在对应的包写画页面
+
+# 数据库设计及其规范
+
+
+
+
+
+# 注意
+- 如果在代码中涉及到状态或者其他常量时,一定不要直接写在代码中,写在当前模块对应的枚举类中
+- 一定不要改动项目之间的依赖关系和模块关系
+- 遇到try catch要抛出自定义的异常,不要只记录日志
+- 如果涉及到使用mcp工具去修改数据库，必须经过我的同意
+- 如果涉及到使用mcp工具去创建新表，则表名必须以water开头
+- 如果涉及到二次开发时需要用到缓存,使用旁路缓存的策略,一定要使用读写锁保证缓存和数据库的高度一致性
+- 如果我没有特别指出则不需要写测试类
+- 如果我使用了/opsx这个skill生成的md文档请使用中文
+
+
+
+# 其他
+
+代码注释需清晰，关键逻辑必须编写注释。
+响应的代码规范请遵守阿里巴巴java开发规范黄山版
+
+# 具体要求
+
+
+## 项目概述
+
+## 核心开发原则
+
+### 1. 模块化设计原则
+- 每个功能模块独立开发，遵循高内聚低耦合原则
+- 模块间通过API接口进行通信，避免直接依赖具体实现
+- 新增功能优先考虑是否可以复用现有模块
+
+### 2. 代码结构规范
+```
+请参考yudao-module-bpm等原有的模块规范
+```
+
+### 3. 命名规范
+- **类命名**: 使用大驼峰命名，含义明确
+  - Controller: `{业务}Controller` (如 `UserController`)
+  - Service接口: `{业务}Service` (如 `UserService`)
+  - Service实现: `{业务}ServiceImpl` (如 `UserServiceImpl`)
+  - DO对象: `{业务}DO` (如 `UserDO`)
+  - VO对象: `{业务}{场景}VO` (如 `UserSaveReqVO`, `UserRespVO`)
+  - Mapper: `{业务}Mapper` (如 `UserMapper`)
+
+- **方法命名**: 使用小驼峰命名
+  - 查询: `get{实体}`, `list{实体}`, `page{实体}`
+  - 新增: `create{实体}`
+  - 更新: `update{实体}`
+  - 删除: `delete{实体}`
+  - 校验: `validate{实体}`
+
+- **字段命名**: 
+  - 数据库字段使用下划线分隔 (如 `user_name`)
+  - Java字段使用小驼峰 (如 `userName`)
+  - 常量使用大写下划线 (如 `MAX_SIZE`)
+
+## 代码开发规范
+
+### 1. Controller 层规范
+```java
+@Tag(name = "管理后台 - 用户管理")
+@RestController
+@RequestMapping("/system/user")
+@Validated
+public class UserController {
+
+    @Resource
+    private UserService userService;
+
+    @PostMapping("/create")
+    @Operation(summary = "创建用户")
+    @PreAuthorize("@ss.hasPermission('system:user:create')")
+    public CommonResult<Long> createUser(@Valid @RequestBody UserSaveReqVO createReqVO) {
+        return success(userService.createUser(createReqVO));
+    }
+}
+```
+
+**Controller 层要求**:
+- 必须使用 `@RestController` 和 `@Validated` 注解
+- 使用 `@Resource` 进行依赖注入，不使用 `@Autowired`
+- 方法参数使用 `@Valid` 进行参数校验
+- 返回结果统一使用 `CommonResult<T>` 包装
+- 使用 Swagger 注解进行API文档描述
+- 权限控制使用 `@PreAuthorize` 注解
+- App端Controller的类名和方法名需要添加"App"前缀
+
+### 2. Service 层规范
+```java
+@Service
+@Validated
+public class UserServiceImpl implements UserService {
+
+    @Resource
+    private UserMapper userMapper;
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public Long createUser(UserSaveReqVO createReqVO) {
+        // 1. 校验数据
+        validateUserForCreateOrUpdate(null, createReqVO.getUsername(), 
+                                    createReqVO.getMobile(), createReqVO.getEmail(),
+                                    createReqVO.getDeptId(), createReqVO.getPostIds());
+        
+        // 2. 数据转换
+        UserDO user = BeanUtils.toBean(createReqVO, UserDO.class);
+        user.setPassword(encodePassword(createReqVO.getPassword()));
+        
+        // 3. 数据保存
+        userMapper.insert(user);
+        return user.getId();
+    }
+}
+```
+
+**Service 层要求**:
+- 接口和实现分离，Service接口放在service包下，实现类放在service.impl包下
+- 实现类必须使用 `@Service` 和 `@Validated` 注解
+- 涉及数据库事务的方法使用 `@Transactional(rollbackFor = Exception.class)`
+- 方法内部按照：校验 -> 转换 -> 业务处理 -> 返回结果的顺序编写
+- 复杂校验逻辑抽取为私有methods
+- 使用 `BeanUtils.toBean()` 进行对象转换
+
+### 3. Mapper 层规范
+```java
+@Mapper
+public interface UserMapper extends BaseMapperX<UserDO> {
+
+    default PageResult<UserDO> selectPage(UserPageReqVO reqVO) {
+        return selectPage(reqVO, new LambdaQueryWrapperX<UserDO>()
+                .likeIfPresent(UserDO::getUsername, reqVO.getUsername())
+                .likeIfPresent(UserDO::getMobile, reqVO.getMobile())
+                .eqIfPresent(UserDO::getStatus, reqVO.getStatus())
+                .betweenIfPresent(UserDO::getCreateTime, reqVO.getCreateTime())
+                .orderByDesc(UserDO::getId));
+    }
+}
+```
+
+**Mapper 层要求**:
+- 继承 `BaseMapperX<T>` 而不是直接继承MyBatis Plus的BaseMapper
+- 复杂查询使用 `LambdaQueryWrapperX` 进行条件构建
+- 使用default方法实现自定义查询逻辑
+- 分页查询统一使用 `PageResult<T>` 作为返回类型
+
+### 4. DO/VO/DTO 规范
+```java
+// DO - 数据对象
+@TableName("system_user")
+@Data
+@EqualsAndHashCode(callSuper = true)
+@ToString(callSuper = true)
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class UserDO extends BaseDO {
+
+    @TableId
+    private Long id;
+    
+    private String username;
+    
+    @TableField(typeHandler = EncryptTypeHandler.class)
+    private String mobile;
+}
+
+// ReqVO - 请求对象
+@Data
+@Schema(description = "管理后台 - 用户创建/更新 Request VO")
+public class UserSaveReqVO {
+
+    @Schema(description = "用户编号", example = "1024")
+    private Long id;
+
+    @Schema(description = "用户账号", requiredMode = Schema.RequiredMode.REQUIRED, example = "sw")
+    @NotBlank(message = "用户账号不能为空")
+    @Size(max = 30, message = "用户账号长度不能超过30个字符")
+    private String username;
+}
+
+// RespVO - 响应对象
+@Data
+@Schema(description = "管理后台 - 用户信息 Response VO")
+public class UserRespVO {
+
+    @Schema(description = "用户编号", example = "1")
+    private Long id;
+
+    @Schema(description = "用户账号", example = "sw")
+    private String username;
+    
+    @Schema(description = "创建时间", example = "时间戳格式")
+    private LocalDateTime createTime;
+}
+```
+
+**对象定义要求**:
+- DO对象继承 `BaseDO`，使用Lombok注解，配置 `callSuper = true`
+- VO对象使用JSR-303校验注解进行参数校验
+- 所有对象都要使用Swagger的 `@Schema` 注解进行文档描述
+- 敏感字段使用相应的TypeHandler进行加密处理
+
+### 5. 异常处理规范
+```java
+// 使用统一的异常处理
+if (user == null) {
+    throw exception(USER_NOT_EXISTS);
+}
+
+// 错误码定义
+public interface ErrorCodeConstants {
+    ErrorCode USER_NOT_EXISTS = new ErrorCode(1_002_001_000, "用户不存在");
+    ErrorCode USER_USERNAME_EXISTS = new ErrorCode(1_002_001_001, "用户账号【{}】已经存在");
+}
+```
+
+**异常处理要求**:
+- 使用 `ServiceExceptionUtil.exception()` 抛出业务异常
+- 错误码统一定义在各模块的 `ErrorCodeConstants` 接口中
+- 错误码格式：`模块编号_业务编号_错误编号`，如 `1_002_001_000`
+
+## 开发工作流程
+
+### 1. 新功能开发流程
+1. **需求分析**: 明确功能需求，确定涉及的模块和API接口
+2. **数据库设计**: 设计数据表结构，遵循数据库设计规范
+3. **代码生成**: 使用系统的代码生成功能生成基础CRUD代码
+4. **接口开发**: 按照分层架构逐层实现业务逻辑
+5. **单元测试**: 编写必要的单元测试用例
+6. **接口测试**: 使用Swagger UI进行接口测试
+7. **代码审查**: 提交前进行代码自查和团队审查
+
+### 2. Bug修复流程
+1. **问题定位**: 通过日志和错误信息定位问题所在
+2. **影响范围评估**: 评估修复对其他功能的影响
+3. **编写测试用例**: 先写测试用例复现问题
+4. **修复问题**: 修复代码并确保测试通过
+5. **回归测试**: 验证修复后不影响其他功能
+
+### 3. 代码提交和分支管理
+- **分支命名**: `feature/模块名-功能描述` 或 `bugfix/问题描述`
+- **提交信息**: 使用规范的commit message格式
+  ```
+  feat(模块): 功能描述
+  fix(模块): 问题修复描述
+  docs: 文档更新
+  style: 代码格式调整
+  refactor: 代码重构
+  test: 测试用例
+  ```
+
+## 代码质量管理
+
+### 1. 代码审查清单
+- [ ] 是否遵循命名规范
+- [ ] 是否有充分的参数校验
+- [ ] 是否有适当的异常处理
+- [ ] 是否有必要的日志记录
+- [ ] 是否有潜在的性能问题
+- [ ] 是否符合安全规range
+- [ ] 是否有充分的注释和文档
+
+### 2. 性能优化建议
+- 使用批量操作替代循环单个操作
+- 合理使用缓存，避免重复查询
+- 数据库查询使用索引，避免全表扫描
+- 大数据量操作采用分页处理
+- 使用异步处理耗时操作
+
+### 3. 安全规范
+- 所有用户输入必须进行校验和过滤
+- 敏感信息必须加密存储
+- 使用参数化查询防止SQL注入
+- 接口必须进行权限控制
+- 记录重要操作的审计日志
+
+## 常用代码模板
+
+### 1. Controller模板
+```java
+@Tag(name = "管理后台 - {业务名称}")
+@RestController
+@RequestMapping("/{模块}/{业务}")
+@Validated
+public class {业务}Controller {
+
+    @Resource
+    private {业务}Service {业务}Service;
+
+    @PostMapping("/create")
+    @Operation(summary = "创建{业务}")
+    @PreAuthorize("@ss.hasPermission('{权限标识}:create')")
+    public CommonResult<Long> create{业务}(@Valid @RequestBody {业务}SaveReqVO createReqVO) {
+        return success({业务}Service.create{业务}(createReqVO));
+    }
+
+    @PutMapping("/update")
+    @Operation(summary = "更新{业务}")  
+    @PreAuthorize("@ss.hasPermission('{权限标识}:update')")
+    public CommonResult<Boolean> update{业务}(@Valid @RequestBody {业务}SaveReqVO updateReqVO) {
+        {业务}Service.update{业务}(updateReqVO);
+        return success(true);
+    }
+
+    @DeleteMapping("/delete")
+    @Operation(summary = "删除{业务}")
+    @Parameter(name = "id", description = "编号", required = true)
+    @PreAuthorize("@ss.hasPermission('{权限标识}:delete')")
+    public CommonResult<Boolean> delete{业务}(@RequestParam("id") Long id) {
+        {业务}Service.delete{业务}(id);
+        return success(true);
+    }
+
+    @GetMapping("/get")
+    @Operation(summary = "获得{业务}")
+    @Parameter(name = "id", description = "编号", required = true, example = "1024")
+    @PreAuthorize("@ss.hasPermission('{权限标识}:query')")
+    public CommonResult<{业务}RespVO> get{业务}(@RequestParam("id") Long id) {
+        {业务}DO {业务} = {业务}Service.get{业务}(id);
+        return success(BeanUtils.toBean({业务}, {业务}RespVO.class));
+    }
+
+    @GetMapping("/page")
+    @Operation(summary = "获得{业务}分页")
+    @PreAuthorize("@ss.hasPermission('{权限标识}:query')")
+    public CommonResult<PageResult<{业务}RespVO>> get{业务}Page(@Valid {业务}PageReqVO pageReqVO) {
+        PageResult<{业务}DO> pageResult = {业务}Service.get{业务}Page(pageReqVO);
+        return success(BeanUtils.toBean(pageResult, {业务}RespVO.class));
+    }
+}
+```
+
+### 2. Service实现模板
+```java
+@Service
+@Validated
+public class {业务}ServiceImpl implements {业务}Service {
+
+    @Resource
+    private {业务}Mapper {业务}Mapper;
+
+    @Override
+    public Long create{业务}({业务}SaveReqVO createReqVO) {
+        // 1. 校验逻辑
+        validate{业务}ForCreateOrUpdate(null, createReqVO);
+        
+        // 2. 转换并插入数据
+        {业务}DO {业务} = BeanUtils.toBean(createReqVO, {业务}DO.class);
+        {业务}Mapper.insert({业务});
+        
+        // 3. 返回结果
+        return {业务}.getId();
+    }
+
+    @Override
+    public void update{业务}({业务}SaveReqVO updateReqVO) {
+        // 1. 校验存在
+        validate{业务}Exists(updateReqVO.getId());
+        // 2. 校验逻辑
+        validate{业务}ForCreateOrUpdate(updateReqVO.getId(), updateReqVO);
+        
+        // 3. 更新数据
+        {业务}DO update{业务} = BeanUtils.toBean(updateReqVO, {业务}DO.class);
+        {业务}Mapper.updateById(update{业务});
+    }
+
+    @Override
+    public void delete{业务}(Long id) {
+        // 校验存在
+        validate{业务}Exists(id);
+        // 删除
+        {业务}Mapper.deleteById(id);
+    }
+
+    private void validate{业务}Exists(Long id) {
+        if ({业务}Mapper.selectById(id) == null) {
+            throw exception({业务}_NOT_EXISTS);
+        }
+    }
+
+    @Override
+    public {业务}DO get{业务}(Long id) {
+        return {业务}Mapper.selectById(id);
+    }
+
+    @Override
+    public PageResult<{业务}DO> get{业务}Page({业务}PageReqVO pageReqVO) {
+        return {业务}Mapper.selectPage(pageReqVO);
+    }
+
+    private void validate{业务}ForCreateOrUpdate(Long id, {业务}SaveReqVO reqVO) {
+        // TODO 补充校验逻辑
+    }
+}
+```
+
+## 开发注意事项
+
+### 1. 数据库相关
+- 新表必须包含 `id`, `create_time`, `update_time`, `creator`, `updater`, `deleted`, `tenant_id` 字段
+- 使用逻辑删除，不要物理删除数据
+- 注意多租户数据隔离
+- 大数据量表要合理分页
+
+### 2. 缓存使用
+- 合理使用Redis缓存提升性能
+- 注意缓存与数据库的一致性
+- 设置合理的缓存过期时间
+- 避免缓存雪崩和击穿问题
+
+### 3. 日志记录
+- 重要业务操作要记录操作日志
+- 异常信息要包含足够的上下文
+- 敏感信息不要记录到日志中
+- 使用结构化日志格式
+
+### 4. 测试要求
+- 核心业务逻辑需要编写单元测试
+- 测试覆盖率要达到70%以上
+- 集成测试验证完整业务流程
+- 性能测试验证系统承载能力
+
+## AI辅助开发建议
+
+### 1. 使用AI进行代码生成
+- 让AI根据数据库表结构生成基础CRUD代码
+- 使用AI生成标准的Controller/Service/Mapper结构
+- 让AI帮助编写参数校验和异常处理代码
+
+### 2. 使用AI进行代码审查
+- 让AI检查代码是否符合项目规范
+- 使用AI发现潜在的性能和安全问题
+- 让AI建议代码优化方案
+
+### 3. 使用AI进行文档生成
+- 让AI根据代码生成API文档
+- 使用AI生成方法和类的JavaDoc注释
+- 让AI生成业务逻辑说明文档
+
+当我进行开发时，请严格按照以上规范执行，确保代码质量和系统的可维护性。对于任何不符合规范的代码，请主动提醒并提供正确的实现方式。 
+
+
+
+
+
+
+

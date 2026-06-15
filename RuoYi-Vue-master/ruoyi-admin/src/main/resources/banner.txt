@@ -1,0 +1,3 @@
+${ruoyi.name}  v${ruoyi.version}
+Spring Boot ${spring-boot.version}
+----------------------------------------------------------------------
