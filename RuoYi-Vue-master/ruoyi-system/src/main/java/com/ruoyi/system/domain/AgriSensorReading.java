@@ -5,31 +5,57 @@ import java.util.Date;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.ruoyi.common.annotation.Excel;
 import com.ruoyi.common.core.domain.BaseEntity;
 
 /**
- * ũҵ���������� agri_sensor_reading
+ * 农业传感器读数 agri_sensor_reading
  */
 public class AgriSensorReading extends BaseEntity
 {
     private static final long serialVersionUID = 1L;
 
+    @Excel(name = "读数ID", cellType = Excel.ColumnType.NUMERIC)
     private Long readingId;
 
     private Long nodeId;
 
+    @Excel(name = "土壤湿度(%)")
     private BigDecimal soilMoisturePct;
 
+    @Excel(name = "空气温度(℃)")
     private BigDecimal airTempC;
 
+    @Excel(name = "空气湿度(%)")
     private BigDecimal airHumidityPct;
 
+    @Excel(name = "光照(Lux)")
     private Integer lightLux;
 
+    @Excel(name = "土壤温度(℃)")
     private BigDecimal soilTempC;
 
+    @Excel(name = "土壤pH")
+    private BigDecimal soilPh;
+
+    @Excel(name = "CO2浓度(ppm)")
+    private Integer co2Ppm;
+
+    @Excel(name = "水体pH")
+    private BigDecimal waterPh;
+
+    @Excel(name = "采集时间", width = 30, dateFormat = "yyyy-MM-dd HH:mm:ss")
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private Date readingTime;
+
+    public BigDecimal getSoilPh() { return soilPh; }
+    public void setSoilPh(BigDecimal soilPh) { this.soilPh = soilPh; }
+
+    public Integer getCo2Ppm() { return co2Ppm; }
+    public void setCo2Ppm(Integer co2Ppm) { this.co2Ppm = co2Ppm; }
+
+    public BigDecimal getWaterPh() { return waterPh; }
+    public void setWaterPh(BigDecimal waterPh) { this.waterPh = waterPh; }
 
     public Long getReadingId()
     {
@@ -122,6 +148,9 @@ public class AgriSensorReading extends BaseEntity
             .append("airHumidityPct", getAirHumidityPct())
             .append("lightLux", getLightLux())
             .append("soilTempC", getSoilTempC())
+            .append("soilPh", getSoilPh())
+            .append("co2Ppm", getCo2Ppm())
+            .append("waterPh", getWaterPh())
             .append("readingTime", getReadingTime())
             .toString();
     }

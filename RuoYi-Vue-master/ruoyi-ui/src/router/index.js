@@ -128,6 +128,66 @@ export const dynamicRoutes = [
         meta: { title: '农业新闻', activeMenu: '/agriFlash/newsFeed' }
       }
     ]
+  },
+  // 维修人员 - 工单池
+  {
+    path: '/repair/technician/ticket-pool',
+    component: Layout,
+    hidden: true,
+    permissions: ['repair:tech:pool'],
+    children: [
+      {
+        path: '',
+        component: () => import('@/views/repair/technician/ticket-pool/index'),
+        name: 'RepairTicketPool',
+        meta: { title: '工单池', activeMenu: '/repair/technician/ticket-pool' }
+      }
+    ]
+  },
+  // 维修人员 - 我的工单
+  {
+    path: '/repair/technician/my-tickets',
+    component: Layout,
+    hidden: true,
+    permissions: ['repair:tech:list'],
+    children: [
+      {
+        path: '',
+        component: () => import('@/views/repair/technician/my-tickets/index'),
+        name: 'RepairMyTickets',
+        meta: { title: '我的工单', activeMenu: '/repair/technician/my-tickets' }
+      }
+    ]
+  },
+  // 维修人员 - 维修记录
+  {
+    path: '/repair/technician/history',
+    component: Layout,
+    hidden: true,
+    permissions: ['repair:tech:history'],
+    children: [
+      {
+        path: '',
+        component: () => import('@/views/repair/technician/history/index'),
+        name: 'RepairHistory',
+        meta: { title: '维修记录', activeMenu: '/repair/technician/history' }
+      }
+    ]
+  },
+  // 维修统计
+  {
+    path: '/repair/statistics',
+    component: Layout,
+    hidden: true,
+    permissions: ['repair:admin:list', 'repair:tech:list'],
+    children: [
+      {
+        path: '',
+        component: () => import('@/views/repair/statistics/index'),
+        name: 'RepairStatistics',
+        meta: { title: '维修统计', activeMenu: '/repair/statistics' }
+      }
+    ]
   }
 ]
 

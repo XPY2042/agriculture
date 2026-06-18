@@ -56,7 +56,6 @@ public class SysUser extends BaseEntity
     private String avatar;
 
     /** 密码 */
-    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     private String password;
 
     /** 账号状态（0正常 1停用） */
@@ -200,6 +199,7 @@ public class SysUser extends BaseEntity
         this.avatar = avatar;
     }
 
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     public String getPassword()
     {
         return password;

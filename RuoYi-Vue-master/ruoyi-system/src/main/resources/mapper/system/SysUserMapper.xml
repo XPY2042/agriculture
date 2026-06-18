@@ -76,9 +76,6 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 		<if test="phonenumber != null and phonenumber != ''">
 			AND u.phonenumber like concat('%', #{phonenumber}, '%')
 		</if>
-		<if test="roleId != null and roleId != 0">
-			AND u.user_id IN (SELECT user_id FROM sys_user_role WHERE role_id = #{roleId})
-		</if>
 		<if test="params.beginTime != null and params.beginTime != ''"><!-- 开始时间检索 -->
 			AND date_format(u.create_time,'%Y%m%d') &gt;= date_format(#{params.beginTime},'%Y%m%d')
 		</if>
@@ -161,14 +158,13 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
  			<if test="sex != null and sex != ''">sex,</if>
  			<if test="password != null and password != ''">password,</if>
  			<if test="status != null and status != ''">status,</if>
- 			<if test="delFlag != null and delFlag != ''">del_flag,</if>
  			<if test="pwdUpdateDate != null">pwd_update_date,</if>
  			<if test="createBy != null and createBy != ''">create_by,</if>
  			<if test="remark != null and remark != ''">remark,</if>
  			create_time
  		)values(
- 			<if test="userId != null and userId != 0">#{userId},</if>
- 			<if test="deptId != null and deptId != 0">#{deptId},</if>
+ 			<if test="userId != null and userId != ''">#{userId},</if>
+ 			<if test="deptId != null and deptId != ''">#{deptId},</if>
  			<if test="userName != null and userName != ''">#{userName},</if>
  			<if test="nickName != null and nickName != ''">#{nickName},</if>
  			<if test="email != null and email != ''">#{email},</if>
@@ -177,7 +173,6 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
  			<if test="sex != null and sex != ''">#{sex},</if>
  			<if test="password != null and password != ''">#{password},</if>
  			<if test="status != null and status != ''">#{status},</if>
- 			<if test="delFlag != null and delFlag != ''">#{delFlag},</if>
  			<if test="pwdUpdateDate != null">#{pwdUpdateDate},</if>
  			<if test="createBy != null and createBy != ''">#{createBy},</if>
  			<if test="remark != null and remark != ''">#{remark},</if>

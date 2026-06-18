@@ -122,6 +122,10 @@
           <el-radio-button label="1">{{ t.tabDone }}</el-radio-button>
         </el-radio-group>
       </el-col>
+      <el-col :span="1.5">
+        <el-button type="warning" plain icon="el-icon-download" size="mini" @click="handleExport" v-hasPermi="['agri:monitor:view']">导出Excel</el-button>
+      </el-col>
+      <el-button type="text" icon="el-icon-data-line" size="mini" @click="showStats=!showStats">{{ showStats ? '返回列表' : '统计视图' }}</el-button>
       <right-toolbar :showSearch.sync="showSearch" @queryTable="getList" />
     </el-row>
 
@@ -239,6 +243,26 @@
         </div>
       </div>
     </el-drawer>
+
+    <!-- ====== 统计视图 ====== -->
+    <div v-if="showStats" class="stats-dashboard">
+      <!-- 第一行：饼图 + 柱状图 左右分栏 -->
+      <div class="stats-row-top">
+        <div class="stats-card">
+          <div class="stats-card__head">告警等级占比</div>
+          <div class="stats-card__body"><div ref="levelChart" class="stats-chart" /></div>
+        </div>
+        <div class="stats-card">
+          <div class="stats-card__head">告警指标分布</div>
+          <div class="stats-card__body"><div ref="metricChart" class="stats-chart" /></div>
+        </div>
+      </div>
+      <!-- 第二行：趋势图通栏 -->
+      <div class="stats-card stats-card--full">
+        <div class="stats-card__head">近30天告警趋势</div>
+        <div class="stats-card__body"><div ref="trendChart" class="stats-chart" /></div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -246,13 +270,19 @@
 import t from './labels-zh'
 import { listAgriAlarm, getAgriAlarm, getUnhandledAlarmCount, confirmAlarms, scanAlarms } from '@/api/agri/alarm'
 import { listAgriNode } from '@/api/agri/node'
+import { alarmDistribution, alarmTrend } from '@/api/agri/statistics'
+import * as echarts from 'echarts'
+require('echarts/theme/macarons')
 
 const METRIC_CODE_LABEL = {
   soil_moisture: t.metricSoil,
   air_temp: t.metricAirT,
   air_humidity: t.metricAirH,
   light: t.metricLight,
-  soil_temp: t.metricSoilT
+  soil_temp: t.metricSoilT,
+  soil_ph: t.metricSoilPh,
+  co2: t.metricCo2,
+  water_ph: t.metricWaterPh
 }
 
 export default {
@@ -262,6 +292,10 @@ export default {
       t,
       loading: false,
       showSearch: true,
+      showStats: false,
+      levelChartInst: null,
+      metricChartInst: null,
+      trendChartInst: null,
       total: 0,
       alarmList: [],
       nodeOptions: [],
@@ -270,7 +304,10 @@ export default {
         { label: t.metricAirT, value: 'air_temp' },
         { label: t.metricAirH, value: 'air_humidity' },
         { label: t.metricLight, value: 'light' },
-        { label: t.metricSoilT, value: 'soil_temp' }
+        { label: t.metricSoilT, value: 'soil_temp' },
+        { label: t.metricSoilPh, value: 'soil_ph' },
+        { label: t.metricCo2, value: 'co2' },
+        { label: t.metricWaterPh, value: 'water_ph' }
       ],
       unhandledCount: 0,
       statWarning: 0,
@@ -451,7 +488,83 @@ export default {
     },
     goMonitor() {
       this.$router.push({ path: '/agri/agriEnv' }).catch(() => {})
+    },
+    handleExport() {
+      this.download('agri/alarm/export', { ...this.queryParams }, `告警数据_${Date.now()}.xlsx`)
+    },
+    // ====== 统计图表方法 ======
+    loadStats() {
+      alarmDistribution('level').then(res => this.renderLevelChart(res.data || []))
+      alarmDistribution('metric').then(res => {
+        const deduped = []; const seen = new Set()
+        ;(res.data || []).forEach(d => { if (!seen.has(d.name)) { seen.add(d.name); deduped.push(d) } })
+        this.renderMetricChart(deduped)
+      })
+      alarmTrend(30).then(res => this.renderTrendChart(res.data || []))
+    },
+    initOrGetChart(refKey, instKey) {
+      if (this[instKey]) return this[instKey]
+      if (!this.$refs[refKey]) return null
+      this[instKey] = echarts.init(this.$refs[refKey], 'macarons')
+      return this[instKey]
+    },
+    renderLevelChart(data) {
+      const chart = this.initOrGetChart('levelChart', 'levelChartInst')
+      if (!chart) return
+      chart.setOption({
+        tooltip: { trigger: 'item', formatter: '{b}: {c} 条 ({d}%)' },
+        legend: { orient: 'vertical', right: 10, top: 'center', textStyle: { fontSize: 12 } },
+        series: [{
+          type: 'pie', radius: ['45%', '72%'], center: ['40%', '52%'],
+          label: { formatter: '{b}\n{c}条', fontSize: 11 },
+          emphasis: { label: { fontSize: 16, fontWeight: 'bold' } },
+          data: data.map(d => ({ name: d.name, value: d.count }))
+        }]
+      }, true)
+    },
+    renderMetricChart(data) {
+      const chart = this.initOrGetChart('metricChart', 'metricChartInst')
+      if (!chart) return
+      chart.setOption({
+        tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+        grid: { left: '3%', right: '8%', bottom: '12%', top: '8%', containLabel: true },
+        xAxis: { type: 'category', data: data.map(d => d.name), axisLabel: { rotate: 30, fontSize: 11 } },
+        yAxis: { type: 'value', name: '告警数', nameTextStyle: { fontSize: 12 } },
+        series: [{
+          type: 'bar', barWidth: '50%',
+          itemStyle: { borderRadius: [4, 4, 0, 0] },
+          data: data.map(d => d.count)
+        }]
+      }, true)
+    },
+    renderTrendChart(data) {
+      const chart = this.initOrGetChart('trendChart', 'trendChartInst')
+      if (!chart) return
+      chart.setOption({
+        tooltip: { trigger: 'axis' },
+        grid: { left: '3%', right: '4%', bottom: '3%', top: '8%', containLabel: true },
+        xAxis: { type: 'category', data: data.map(d => d.dateStr), axisLabel: { rotate: 45, fontSize: 10 } },
+        yAxis: { type: 'value', name: '告警数' },
+        series: [{
+          type: 'line', smooth: true, symbol: 'circle', symbolSize: 6,
+          areaStyle: { opacity: 0.08 }, data: data.map(d => d.alarmCount)
+        }]
+      }, true)
     }
+  },
+  watch: {
+    showStats(val) {
+      if (val) this.$nextTick(() => this.loadStats())
+    }
+  },
+  beforeDestroy() {
+    this.stopAlarmPoll()
+    window.removeEventListener('resize', this.resizeChart)
+    if (this.chart) { this.chart.dispose(); this.chart = null }
+    // 清理统计图表实例
+    ['levelChartInst','metricChartInst','trendChartInst'].forEach(k => {
+      if (this[k]) { this[k].dispose(); this[k] = null }
+    })
   }
 }
 </script>
@@ -520,6 +633,15 @@ export default {
   margin-top: 24px;
   text-align: center;
 }
+/* ====== 统计视图 ====== */
+.stats-dashboard { display: flex; flex-direction: column; gap: 16px; margin-top: 4px; }
+.stats-row-top { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.stats-card { background: #fff; border-radius: 10px; box-shadow: 0 1px 6px rgba(0,0,0,.05); overflow: hidden; }
+.stats-card__head { font-size: 14px; font-weight: 600; color: #303133; padding: 14px 18px; border-bottom: 1px solid #f0f0f0; }
+.stats-card__body { padding: 8px; }
+.stats-chart { height: 320px; width: 100%; }
+.stats-card--full { width: 100%; }
+@media (max-width: 992px) { .stats-row-top { grid-template-columns: 1fr; } }
 </style>
 
 <style>

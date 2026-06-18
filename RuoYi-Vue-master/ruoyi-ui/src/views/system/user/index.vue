@@ -37,11 +37,6 @@
             <el-option v-for="dict in dict.type.sys_normal_disable" :key="dict.value" :label="dict.label" :value="dict.value" />
           </el-select>
         </el-form-item>
-        <el-form-item label="角色" prop="roleId">
-          <el-select v-model="queryParams.roleId" placeholder="全部" clearable style="width: 140px">
-            <el-option v-for="r in filterRoleOptions" :key="r.roleId" :label="r.roleName" :value="r.roleId" />
-          </el-select>
-        </el-form-item>
         <el-form-item>
           <el-button type="primary" icon="el-icon-search" size="mini" @click="handleQuery">搜索</el-button>
           <el-button icon="el-icon-refresh" size="mini" @click="resetQuery">重置</el-button>
@@ -141,7 +136,7 @@
           </el-col>
           <el-col :span="12" v-if="form.userId == undefined">
             <el-form-item label="登录账号" prop="userName">
-              <el-input v-model="form.userName" placeholder="登录时使用，2-20位字符" maxlength="30" />
+              <el-input v-model="form.userName" placeholder="2-20位字符" maxlength="30" />
             </el-form-item>
           </el-col>
           <el-col :span="12" v-if="form.userId == undefined">
@@ -230,10 +225,8 @@ export default {
         userName: undefined,
         nickName: undefined,
         phonenumber: undefined,
-        status: undefined,
-        roleId: undefined
+        status: undefined
       },
-      filterRoleOptions: [],
       columns: {
         userName: { label: '用户', visible: true },
         phonenumber: { label: '手机', visible: true },
@@ -262,9 +255,6 @@ export default {
     this.getList()
     this.getConfigKey('sys.user.initPassword').then(res => {
       if (res && res.data) this.initPassword = res.data
-    }).catch(() => {})
-    getUser().then(response => {
-      this.filterRoleOptions = response.roles || []
     }).catch(() => {})
   },
   methods: {
@@ -313,7 +303,6 @@ export default {
       this.getList()
     },
     resetQuery() {
-      this.queryParams.roleId = undefined
       this.resetForm('queryForm')
       this.handleQuery()
     },
@@ -367,12 +356,6 @@ export default {
         if (!valid) return
         this.form.deptId = DEFAULT_DEPT_ID
         this.form.postIds = []
-        if (this.form.userName) {
-          this.form.userName = this.form.userName.trim()
-        }
-        if (this.form.password) {
-          this.form.password = this.form.password.trim()
-        }
         const req = this.form.userId != null ? updateUser(this.form) : addUser(this.form)
         req.then(() => {
           this.$modal.msgSuccess(this.form.userId != null ? '修改成功' : '新增成功')

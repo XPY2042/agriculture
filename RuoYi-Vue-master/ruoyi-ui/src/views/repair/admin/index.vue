@@ -22,6 +22,9 @@
       <el-col :span="1.5">
         <el-button type="danger" plain icon="el-icon-delete" size="mini" :disabled="multiple" @click="handleDelete" v-hasPermi="['repair:admin:remove']">删除</el-button>
       </el-col>
+      <el-col :span="1.5">
+        <el-button type="warning" plain icon="el-icon-download" size="mini" @click="handleExport" v-hasPermi="['repair:admin:list']">导出Excel</el-button>
+      </el-col>
       <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
@@ -195,6 +198,9 @@ export default {
       const requestIds = row.requestId || this.ids
       this.$modal.confirm('是否确认删除报修编号为"' + requestIds + '"的数据？').then(() => delRepairRequest(requestIds))
         .then(() => { this.getList(); this.$modal.msgSuccess('删除成功') }).catch(() => {})
+    },
+    handleExport() {
+      this.download('repair/request/export', { ...this.queryParams }, `报修数据_${Date.now()}.xlsx`)
     }
   }
 }

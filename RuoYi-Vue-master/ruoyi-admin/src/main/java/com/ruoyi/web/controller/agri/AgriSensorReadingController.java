@@ -1,8 +1,12 @@
 package com.ruoyi.web.controller.agri;
+import com.ruoyi.common.utils.poi.ExcelUtil;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.Date;
+import jakarta.servlet.http.HttpServletResponse;
+import com.ruoyi.common.utils.poi.ExcelUtil;
+
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
@@ -170,6 +174,9 @@ public class AgriSensorReadingController extends BaseController
         reading.setAirHumidityPct(bd(r.nextInt(350, 901), 10));
         reading.setLightLux(r.nextInt(5000, 45001));
         reading.setSoilTempC(bd(r.nextInt(140, 281), 10));
+        reading.setSoilPh(bd(r.nextInt(45, 81), 10));       // pH 4.5~8.0
+        reading.setCo2Ppm(r.nextInt(350, 1201));             // CO2 350~1200ppm
+        reading.setWaterPh(bd(r.nextInt(62, 85), 10));       // water pH 6.2~8.5
         reading.setReadingTime(new Date());
         agriSensorReadingService.insertAgriSensorReading(reading);
         return success(reading);
@@ -186,5 +193,15 @@ public class AgriSensorReadingController extends BaseController
     private static BigDecimal bd(int v, int scale)
     {
         return BigDecimal.valueOf(v).divide(BigDecimal.valueOf(scale), 2, RoundingMode.HALF_UP);
+    }
+
+    @PreAuthorize("@ss.hasPermi('agri:monitor:view')")
+    @Log(title = "传感器数据", businessType = BusinessType.EXPORT)
+    @PostMapping("/export")
+    public void export(HttpServletResponse response, AgriSensorReading reading)
+    {
+        List<AgriSensorReading> list = agriSensorReadingService.selectAgriSensorReadingList(reading);
+        ExcelUtil<AgriSensorReading> util = new ExcelUtil<AgriSensorReading>(AgriSensorReading.class);
+        util.exportExcel(response, list, "传感器数据");
     }
 }

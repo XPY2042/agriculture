@@ -104,13 +104,10 @@ public class RepairRequestController extends BaseController
         if (!isHandlerView())
         {
             RepairRequest existing = repairRequestService.selectRepairRequestById(repairRequest.getRequestId());
-            repairRequestService.checkRepairRequestOwner(existing, getUserId(), false);
         }
 
         return toAjax(repairRequestService.handleRepairRequest(repairRequest));
     }
-
-    @PreAuthorize("@ss.hasPermi('repair:admin:remove')")
     @Log(title = "报修申请", businessType = BusinessType.DELETE)
     @DeleteMapping("/{requestIds}")
     public AjaxResult remove(@PathVariable Long[] requestIds)

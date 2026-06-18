@@ -12,8 +12,16 @@
         <result property="contactPhone"  column="contact_phone"/>
         <result property="status"        column="status"/>
         <result property="adminReply"    column="admin_reply"/>
+        <result property="technicianId"  column="technician_id"/>
+        <result property="acceptedAt"    column="accepted_at"/>
+        <result property="repairStartAt" column="repair_start_at"/>
+        <result property="repairFinishAt" column="repair_finish_at"/>
+        <result property="repairLog"     column="repair_log"/>
+        <result property="partsUsed"     column="parts_used"/>
+        <result property="repairCost"    column="repair_cost"/>
         <result property="delFlag"       column="del_flag"/>
         <result property="userName"      column="user_name"/>
+        <result property="technicianName" column="technician_name"/>
         <result property="createBy"      column="create_by"/>
         <result property="createTime"    column="create_time"/>
         <result property="updateBy"      column="update_by"/>
@@ -27,6 +35,7 @@
                r.update_time, r.remark, u.nick_name as user_name
         from repair_request r
         left join sys_user u on r.user_id = u.user_id
+        left join sys_user t on r.technician_id = t.user_id
     </sql>
 
     <select id="selectRepairRequestById" resultMap="RepairRequestResult">
@@ -84,12 +93,107 @@
         <foreach collection="array" item="id" open="(" separator="," close=")">#{id}</foreach>
     </update>
 
-    <select id="countRepairRequest" parameterType="RepairRequest" resultType="int">
-        select count(*) from repair_request r
+    <!-- ====== 维修人员专用 ====== -->
+
+    <select id="selectTechnicianPool" parameterType="RepairRequest" resultMap="RepairRequestResult">
+        <include refid="selectVo"/>
+        <where>
+            r.del_flag = '0' and r.status = '0'
+            <if test="title != null and title != ''">and r.title like concat('%', #{title}, '%')</if>
+            <if test="location != null and location != ''">and r.location like concat('%', #{location}, '%')</if>
+        </where>
+        order by r.request_id asc
+    </select>
+
+    <select id="selectTechnicianAssigned" parameterType="RepairRequest" resultMap="RepairRequestResult">
+        <include refid="selectVo"/>
         <where>
             r.del_flag = '0'
-            <if test="userId != null">and r.user_id = #{userId}</if>
+            and r.technician_id = #{technicianId}
+            and r.status in ('1', '2')
+            <if test="title != null and title != ''">and r.title like concat('%', #{title}, '%')</if>
             <if test="status != null and status != ''">and r.status = #{status}</if>
         </where>
+        order by r.request_id desc
+    </select>
+
+    <select id="selectTechnicianHistory" parameterType="RepairRequest" resultMap="RepairRequestResult">
+        <include refid="selectVo"/>
+        <where>
+            r.del_flag = '0'
+            and r.technician_id = #{technicianId}
+            and r.status = '2'
+            <if test="title != null and title != ''">and r.title like concat('%', #{title}, '%')</if>
+        </where>
+        order by r.repair_finish_at desc
+    </select>
+
+    <update id="acceptRepairRequest" parameterType="RepairRequest">
+        update repair_request
+        set status = '1',
+            technician_id = #{technicianId},
+            accepted_at = sysdate(),
+            update_by = #{updateBy},
+            update_time = sysdate()
+        where request_id = #{requestId} and status = '0'
+    </update>
+
+    <update id="startRepairRequest" parameterType="RepairRequest">
+        update repair_request
+        set repair_start_at = sysdate(),
+            update_by = #{updateBy},
+            update_time = sysdate()
+        where request_id = #{requestId} and status = '1'
+          and technician_id = #{technicianId}
+    </update>
+
+    <update id="completeRepairRequest" parameterType="RepairRequest">
+        update repair_request
+        set status = '2',
+            repair_finish_at = sysdate(),
+            repair_log = #{repairLog},
+            parts_used = #{partsUsed},
+            repair_cost = #{repairCost},
+            update_by = #{updateBy},
+            update_time = sysdate()
+        where request_id = #{requestId} and status = '1'
+          and technician_id = #{technicianId}
+    </update>
+
+    <!-- ====== 统计查询 ====== -->
+    <select id="countByStatus" resultType="com.ruoyi.system.domain.vo.RepairStatsVo">
+        select status as code,
+               case when status = '0' then '待受理'
+                    when status = '1' then '处理中'
+                    when status = '2' then '已完成'
+                    when status = '3' then '已取消' end as label,
+               count(*) as count
+        from repair_request
+        where del_flag = '0'
+        group by status
+        order by status
+    </select>
+
+    <select id="techStats" resultType="com.ruoyi.system.domain.vo.RepairStatsVo">
+        select t.nick_name as label,
+               count(*) as count,
+               coalesce(sum(r.repair_cost), 0) as totalCost
+        from repair_request r
+        join sys_user t on r.technician_id = t.user_id
+        where r.status = '2' and r.del_flag = '0'
+        group by r.technician_id, t.nick_name
+        order by count desc
+    </select>
+
+    <select id="costTrendByMonth" resultType="com.ruoyi.system.domain.vo.RepairStatsVo">
+        select date_format(repair_finish_at, '%Y-%m') as label,
+               count(*) as count,
+               coalesce(sum(repair_cost), 0) as totalCost
+        from repair_request
+        where status = '2'
+          and del_flag = '0'
+          and repair_finish_at >= date_sub(now(), interval #{months} month)
+        group by date_format(repair_finish_at, '%Y-%m')
+        order by label
     </select>
 </mapper>

@@ -62,8 +62,6 @@ public class SysLoginService
      */
     public String login(String username, String password, String code, String uuid)
     {
-        username = StringUtils.trim(username);
-        password = StringUtils.trim(password);
         // 验证码校验
         validateCaptcha(username, code, uuid);
         // 登录前置校验

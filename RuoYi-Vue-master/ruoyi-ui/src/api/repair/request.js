@@ -45,10 +45,3 @@ export function delRepairRequest(requestId) {
     method: 'delete'
   })
 }
-
-export function getPendingRepairCount() {
-  return request({
-    url: '/repair/request/pending-count',
-    method: 'get'
-  })
-}

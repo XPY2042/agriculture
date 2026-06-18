@@ -15,6 +15,16 @@ public class AgriReadingAggregateVo implements Serializable
     private BigDecimal avgAirHumidityPct;
     private BigDecimal avgLightLux;
     private BigDecimal avgSoilTempC;
+    private BigDecimal avgSoilPh;
+    private BigDecimal avgCo2Ppm;
+    private BigDecimal avgWaterPh;
+
+    public BigDecimal getAvgSoilPh() { return avgSoilPh; }
+    public void setAvgSoilPh(BigDecimal avgSoilPh) { this.avgSoilPh = avgSoilPh; }
+    public BigDecimal getAvgCo2Ppm() { return avgCo2Ppm; }
+    public void setAvgCo2Ppm(BigDecimal avgCo2Ppm) { this.avgCo2Ppm = avgCo2Ppm; }
+    public BigDecimal getAvgWaterPh() { return avgWaterPh; }
+    public void setAvgWaterPh(BigDecimal avgWaterPh) { this.avgWaterPh = avgWaterPh; }
 
     public BigDecimal getAvgSoilMoisturePct()
     {

@@ -142,7 +142,7 @@ public class SysMenuServiceImpl implements ISysMenuService
         if (SecurityUtils.isAdmin(userId))
         {
             menus = menuMapper.selectMenuTreeAll();
-            menus = menus.stream().filter(m -> !isUserRepairMenu(m) && !isRepairWorkerMenu(m)).collect(Collectors.toList());
+            menus = menus.stream().filter(m -> !isUserRepairMenu(m)).collect(Collectors.toList());
         }
         else
         {
@@ -160,17 +160,6 @@ public class SysMenuServiceImpl implements ISysMenuService
             return true;
         }
         return "repair/apply/index".equals(menu.getComponent());
-    }
-
-    /** 维修员「维修任务」菜单，超级管理员不展示（已有报修管理） */
-    private boolean isRepairWorkerMenu(SysMenu menu)
-    {
-        String perms = menu.getPerms();
-        if (StringUtils.isNotEmpty(perms) && perms.startsWith("repair:worker:"))
-        {
-            return true;
-        }
-        return "repair/worker/index".equals(menu.getComponent());
     }
 
     /**

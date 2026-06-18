@@ -4,9 +4,7 @@
 
 ## 环境与启动
 
-1. **MySQL**：按序号执行 `sql/` 下脚本。必做：`01_create_database.sql`（建库）→ `02_init_schema.sql`（全量初始化，已含智慧农业表与菜单、用户管理；**末尾会删掉「系统管理 / 系统监控 / 系统工具」等框架菜单**，侧边栏只保留「智慧农业」与「用户管理」）。**可选扩展**（按需）：`03_install_agri.sql`（告警中心等农业模块）、`04_install_agri_remote.sql`（远程互联）、`05_install_repair.sql`（报修服务）、`07_install_repair_worker.sql`（维修员角色与维修任务菜单）、`06_install_agri_news.sql`（农业快讯 / 农业新闻 RSS）、`90_seed_multi_users.sql`（批量测试账号，见下方说明）、`91_reset_password_ry.sql`（重置 `ry` 密码为 `123456`）。若远程互联菜单中文乱码，执行 `04_fix_agri_remote_utf8.sql`；**若维修员角色/菜单乱码，执行 `08_fix_repair_worker_utf8.sql`**。**若侧边栏消失或菜单乱码，执行 `93_restore_sidebar_menus.sql` 一键恢复全部菜单**（执行后重新登录）。**导入菜单后请重新登录**（或清空 Redis 中该用户缓存）以便侧边栏刷新。
-
-> **SQL 中文编码约定**：新增或修改 `sql/` 脚本时，**不要在 `.sql` 文件中直接写中文**（Windows 下易乱码），应使用 `UNHEX('...')` 写入 UTF-8 十六进制，注释用英文；可参考 `08_fix_repair_worker_utf8.sql`、`93_restore_sidebar_menus.sql`。
+1. **MySQL**：按序号执行 `sql/` 下脚本。必做：`01_create_database.sql`（建库）→ `02_init_schema.sql`（全量初始化，已含智慧农业表与菜单、用户管理；**末尾会删掉「系统管理 / 系统监控 / 系统工具」等框架菜单**，侧边栏只保留「智慧农业」与「用户管理」）。**可选扩展**（按需）：`03_install_agri.sql`（告警中心等农业模块）、`04_install_agri_remote.sql`（远程互联）、`05_install_repair.sql`（报修服务）、`06_install_agri_news.sql`（农业快讯 / 农业新闻 RSS）、`90_seed_multi_users.sql`（批量测试账号，见下方说明）、`91_reset_password_ry.sql`（重置 `ry` 密码为 `123456`）。若远程互联菜单中文乱码，执行 `04_fix_agri_remote_utf8.sql`。**若侧边栏消失或菜单乱码，执行 `93_restore_sidebar_menus.sql` 一键恢复全部菜单**（执行后重新登录）。**导入菜单后请重新登录**（或清空 Redis 中该用户缓存）以便侧边栏刷新。
 2. **Redis**：默认 `localhost:6379`。
 3. **后端**：配置 `ruoyi-admin/src/main/resources/application-druid.yml`（可用环境变量 `MYSQL_USER`、`MYSQL_PASSWORD` 等覆盖），运行 `RuoYiApplication`。
 4. **前端**：在 `ruoyi-ui` 执行 `npm install`、`npm run dev`；页面标题见 `.env.development` 中 `VUE_APP_TITLE`。
@@ -33,9 +31,6 @@
 |------|------|
 | 智慧农业 → 环境监测 | 实时读数、趋势图、生长建议、模拟上报 |
 | 智慧农业 → 传感节点 | 设备编码、地块、作物类型等维护 |
-| 报修服务 → 我的报修 | 普通用户提交报修、查看进度 |
-| 报修服务 → 维修任务 | 维修员查看待受理报修并处理 |
-| 报修服务 → 报修管理 | 管理员查看全部报修并处理 |
 | 农业快讯 → 农业新闻 | 从公开 RSS 源抓取农业资讯，支持搜索与刷新 |
 
 ## 多用户账号（可选）
@@ -48,7 +43,6 @@
 | `agri_admin` | 农业管理员 | 农业管理员 | 智慧农业全部功能（含节点增删改、模拟上报） |
 | `manager01` | 农技主管 | 农业管理员 | 同上 |
 | `monitor01` / `monitor02` / `monitor03` | 监测员 | 普通角色 | 仅查看环境监测与传感节点列表 |
-| `repair01` / `repair02` | 维修员 | 维修员 | 查看待受理报修、受理并处理（需先执行 `07_install_repair_worker.sql`） |
 | `ry` | 监测员 | 普通角色 | 同上（若库中已有该账号会同步为普通角色） |
 
 > 管理员登录后可在侧边栏 **用户管理** 中增删改用户、分配角色与重置密码（导入 `02_init_schema.sql` 即已包含）。普通监测员账号无此菜单。

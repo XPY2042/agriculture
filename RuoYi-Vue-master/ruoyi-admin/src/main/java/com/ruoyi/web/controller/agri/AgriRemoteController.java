@@ -1,4 +1,8 @@
 package com.ruoyi.web.controller.agri;
+import com.ruoyi.common.utils.poi.ExcelUtil;
+
+import jakarta.servlet.http.HttpServletResponse;
+import com.ruoyi.common.utils.poi.ExcelUtil;
 
 import java.util.List;
 import java.util.Map;
@@ -63,5 +67,15 @@ public class AgriRemoteController extends BaseController
     public AjaxResult commandTypes()
     {
         return success(agriRemoteCommandService.getCommandTypeLabels());
+    }
+
+    @PreAuthorize("@ss.hasPermi('agri:remote:view')")
+    @Log(title = "远程指令", businessType = BusinessType.EXPORT)
+    @PostMapping("/export")
+    public void export(HttpServletResponse response, AgriRemoteCommand command)
+    {
+        List<AgriRemoteCommand> list = agriRemoteCommandService.selectAgriRemoteCommandList(command);
+        ExcelUtil<AgriRemoteCommand> util = new ExcelUtil<AgriRemoteCommand>(AgriRemoteCommand.class);
+        util.exportExcel(response, list, "远程指令");
     }
 }
