@@ -22,5 +22,5 @@ public interface AgriSensorNodeMapper
 
     AgriSensorNode checkNodeCodeUnique(String nodeCode);
 
-    List<AgriSensorNode> selectNodeHeatmap();
+    List<AgriSensorNode> selectNodeHeatmap(AgriSensorNode node);
 }

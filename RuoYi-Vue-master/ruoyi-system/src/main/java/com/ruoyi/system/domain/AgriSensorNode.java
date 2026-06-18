@@ -37,6 +37,14 @@ public class AgriSensorNode extends BaseEntity
     private Integer alarmCount;
     /** 热力图：最高告警级别 1=警告 2=危险 */
     private String maxAlarmLevel;
+    /** 热力图：活跃报修数（待受理+处理中） */
+    private Integer repairCount;
+    /** 热力图：最高报修状态 0=待受理 1=处理中（null=无活跃报修） */
+    private String maxRepairStatus;
+    /** 热力图筛选：1=有活跃报修 0=无活跃报修 */
+    private String repairState;
+    /** 热力图筛选：1=有未处理告警 0=无未处理告警 */
+    private String alarmState;
 
     public Long getNodeId()
     {
@@ -128,6 +136,46 @@ public class AgriSensorNode extends BaseEntity
         this.maxAlarmLevel = maxAlarmLevel;
     }
 
+    public Integer getRepairCount()
+    {
+        return repairCount;
+    }
+
+    public void setRepairCount(Integer repairCount)
+    {
+        this.repairCount = repairCount;
+    }
+
+    public String getMaxRepairStatus()
+    {
+        return maxRepairStatus;
+    }
+
+    public void setMaxRepairStatus(String maxRepairStatus)
+    {
+        this.maxRepairStatus = maxRepairStatus;
+    }
+
+    public String getRepairState()
+    {
+        return repairState;
+    }
+
+    public void setRepairState(String repairState)
+    {
+        this.repairState = repairState;
+    }
+
+    public String getAlarmState()
+    {
+        return alarmState;
+    }
+
+    public void setAlarmState(String alarmState)
+    {
+        this.alarmState = alarmState;
+    }
+
     @Override
     public String toString()
     {
@@ -144,6 +192,12 @@ public class AgriSensorNode extends BaseEntity
             .append("updateBy", getUpdateBy())
             .append("updateTime", getUpdateTime())
             .append("remark", getRemark())
+            .append("alarmCount", getAlarmCount())
+            .append("maxAlarmLevel", getMaxAlarmLevel())
+            .append("repairCount", getRepairCount())
+            .append("maxRepairStatus", getMaxRepairStatus())
+            .append("repairState", getRepairState())
+            .append("alarmState", getAlarmState())
             .toString();
     }
 }

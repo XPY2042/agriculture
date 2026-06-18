@@ -75,8 +75,12 @@ public class AgriSensorNodeServiceImpl implements IAgriSensorNodeService
     }
 
     @Override
-    public List<AgriSensorNode> selectNodeHeatmap()
+    public List<AgriSensorNode> selectNodeHeatmap(AgriSensorNode node)
     {
-        return agriSensorNodeMapper.selectNodeHeatmap();
+        if (node == null)
+        {
+            node = new AgriSensorNode();
+        }
+        return agriSensorNodeMapper.selectNodeHeatmap(node);
     }
 }

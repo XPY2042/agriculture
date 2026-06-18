@@ -5,6 +5,7 @@
     <resultMap type="RepairRequest" id="RepairRequestResult">
         <id     property="requestId"     column="request_id"/>
         <result property="userId"        column="user_id"/>
+        <result property="nodeId"        column="node_id"/>
         <result property="title"         column="title"/>
         <result property="description"   column="description"/>
         <result property="location"      column="location"/>
@@ -21,7 +22,7 @@
     </resultMap>
 
     <sql id="selectVo">
-        select r.request_id, r.user_id, r.title, r.description, r.location, r.contact_phone,
+        select r.request_id, r.user_id, r.node_id, r.title, r.description, r.location, r.contact_phone,
                r.status, r.admin_reply, r.del_flag, r.create_by, r.create_time, r.update_by,
                r.update_time, r.remark, u.nick_name as user_name
         from repair_request r
@@ -38,6 +39,7 @@
         <where>
             r.del_flag = '0'
             <if test="userId != null">and r.user_id = #{userId}</if>
+            <if test="nodeId != null">and r.node_id = #{nodeId}</if>
             <if test="title != null and title != ''">and r.title like concat('%', #{title}, '%')</if>
             <if test="location != null and location != ''">and r.location like concat('%', #{location}, '%')</if>
             <if test="status != null and status != ''">and r.status = #{status}</if>
@@ -48,10 +50,10 @@
 
     <insert id="insertRepairRequest" parameterType="RepairRequest" useGeneratedKeys="true" keyProperty="requestId">
         insert into repair_request (
-            user_id, title, description, location, contact_phone, status, admin_reply, del_flag,
+            user_id, node_id, title, description, location, contact_phone, status, admin_reply, del_flag,
             create_by, create_time, remark
         ) values (
-            #{userId}, #{title}, #{description}, #{location}, #{contactPhone},
+            #{userId}, #{nodeId}, #{title}, #{description}, #{location}, #{contactPhone},
             #{status}, #{adminReply}, '0', #{createBy}, sysdate(), #{remark}
         )
     </insert>
@@ -59,6 +61,7 @@
     <update id="updateRepairRequest" parameterType="RepairRequest">
         update repair_request
         <set>
+            <if test="nodeId != null">node_id = #{nodeId},</if>
             <if test="title != null and title != ''">title = #{title},</if>
             <if test="description != null">description = #{description},</if>
             <if test="location != null">location = #{location},</if>

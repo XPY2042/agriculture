@@ -95,15 +95,13 @@ public class AgriSensorNodeController extends BaseController
 
     @PreAuthorize("@ss.hasPermi('agri:monitor:view')")
     @GetMapping("/heatmap")
-    public AjaxResult heatmap()
+    public AjaxResult heatmap(AgriSensorNode node)
     {
-        List<AgriSensorNode> list = agriSensorNodeService.selectNodeHeatmap();
         if (!SecurityUtils.isAdmin())
         {
-            String username = getUsername();
-            list = list.stream().filter(n -> StringUtils.equals(n.getCreateBy(), username))
-                    .collect(java.util.stream.Collectors.toList());
+            node.setCreateBy(getUsername());
         }
+        List<AgriSensorNode> list = agriSensorNodeService.selectNodeHeatmap(node);
         return success(list);
     }
 

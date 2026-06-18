@@ -23,6 +23,9 @@ public class RepairRequest extends BaseEntity
 
     private Long userId;
 
+    /** 关联大棚节点ID（可选） */
+    private Long nodeId;
+
     @NotBlank(message = "报修原因不能为空")
     @Size(max = 100, message = "报修原因不能超过100个字符")
     private String title;
@@ -65,6 +68,16 @@ public class RepairRequest extends BaseEntity
     public void setUserId(Long userId)
     {
         this.userId = userId;
+    }
+
+    public Long getNodeId()
+    {
+        return nodeId;
+    }
+
+    public void setNodeId(Long nodeId)
+    {
+        this.nodeId = nodeId;
     }
 
     public String getTitle()
@@ -153,6 +166,7 @@ public class RepairRequest extends BaseEntity
         return new ToStringBuilder(this, ToStringStyle.MULTI_LINE_STYLE)
             .append("requestId", getRequestId())
             .append("userId", getUserId())
+            .append("nodeId", getNodeId())
             .append("title", getTitle())
             .append("description", getDescription())
             .append("location", getLocation())

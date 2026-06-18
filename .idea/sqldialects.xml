@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="SqlDialectMappings">
+    <file url="file://$USER_HOME$/Desktop/RuoYi-Vue-master/sql/01_create_database.sql" dialect="MySQL" />
+    <file url="file://$USER_HOME$/Desktop/RuoYi-Vue-master/sql/02_init_schema.sql" dialect="MySQL" />
+    <file url="file://$USER_HOME$/Desktop/RuoYi-Vue-master/sql/03_install_agri.sql" dialect="MySQL" />
+    <file url="file://$USER_HOME$/Desktop/RuoYi-Vue-master/sql/04_fix_agri_remote_utf8.sql" dialect="MySQL" />
+    <file url="file://$USER_HOME$/Desktop/RuoYi-Vue-master/sql/04_install_agri_remote.sql" dialect="MySQL" />
+    <file url="file://$USER_HOME$/Desktop/RuoYi-Vue-master/sql/05_install_repair.sql" dialect="MySQL" />
+    <file url="file://$USER_HOME$/Desktop/RuoYi-Vue-master/sql/06_fix_agri_news_utf8.sql" dialect="MySQL" />
+    <file url="file://$USER_HOME$/Desktop/RuoYi-Vue-master/sql/06_install_agri_news.sql" dialect="MySQL" />
+    <file url="file://$USER_HOME$/Desktop/RuoYi-Vue-master/sql/07_install_repair_worker.sql" dialect="MySQL" />
+    <file url="file://$USER_HOME$/Desktop/RuoYi-Vue-master/sql/08_fix_repair_worker_utf8.sql" dialect="MySQL" />
+    <file url="file://$USER_HOME$/Desktop/RuoYi-Vue-master/sql/09_install_heatmap.sql" dialect="MySQL" />
+    <file url="file://$USER_HOME$/Desktop/RuoYi-Vue-master/sql/90_seed_multi_users.sql" dialect="MySQL" />
+    <file url="file://$USER_HOME$/Desktop/RuoYi-Vue-master/sql/91_reset_password_ry.sql" dialect="MySQL" />
+    <file url="file://$USER_HOME$/Desktop/RuoYi-Vue-master/sql/92_restore_ry_user.sql" dialect="MySQL" />
+    <file url="file://$USER_HOME$/Desktop/RuoYi-Vue-master/sql/92_simplify_dept.sql" dialect="MySQL" />
+    <file url="file://$USER_HOME$/Desktop/RuoYi-Vue-master/sql/93_fix_user_login.sql" dialect="MySQL" />
+    <file url="file://$USER_HOME$/Desktop/RuoYi-Vue-master/sql/93_restore_sidebar_menus.sql" dialect="MySQL" />
+    <file url="file://$USER_HOME$/Desktop/RuoYi-Vue-master/sql/94_fix_agri_news_route.sql" dialect="MySQL" />
+    <file url="file://$PROJECT_DIR$/RuoYi-Vue-master/sql/04_install_agri_remote.sql" dialect="MySQL" />
+    <file url="file://$PROJECT_DIR$/RuoYi-Vue-master/sql/05_install_repair.sql" dialect="MySQL" />
+    <file url="file://$PROJECT_DIR$/RuoYi-Vue-master/sql/06_fix_agri_news_utf8.sql" dialect="MySQL" />
+    <file url="file://$PROJECT_DIR$/RuoYi-Vue-master/sql/06_install_agri_news.sql" dialect="MySQL" />
+    <file url="file://$PROJECT_DIR$/RuoYi-Vue-master/sql/09_install_heatmap.sql" dialect="MySQL" />
+    <file url="file://$PROJECT_DIR$/RuoYi-Vue-master/sql/10_add_repair_node_id.sql" dialect="MySQL" />
+    <file url="file://$PROJECT_DIR$/RuoYi-Vue-master/sql/11_grant_common_user_features.sql" dialect="MySQL" />
+    <file url="file://$PROJECT_DIR$/RuoYi-Vue-master/sql/93_fix_user_login.sql" dialect="MySQL" />
+    <file url="file://$PROJECT_DIR$/RuoYi-Vue-master/sql/93_restore_sidebar_menus.sql" dialect="MySQL" />
+  </component>
+</project>

@@ -1,4 +1,5 @@
 SET NAMES utf8mb4;
+USE `ry-vue`;
 
 CREATE TABLE IF NOT EXISTS agri_remote_command (
   command_id       bigint(20)      NOT NULL AUTO_INCREMENT    COMMENT '指令ID',

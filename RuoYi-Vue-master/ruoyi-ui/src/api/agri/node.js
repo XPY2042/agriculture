@@ -38,9 +38,10 @@ export function delAgriNode(nodeId) {
   })
 }
 
-export function getNodeHeatmap() {
+export function getNodeHeatmap(query) {
   return request({
     url: '/agri/node/heatmap',
-    method: 'get'
+    method: 'get',
+    params: query
   })
 }

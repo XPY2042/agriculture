@@ -1,9 +1,11 @@
 -- ============================================================
 -- 报修服务：数据表 + 菜单(menu_id 2300-2322) + 角色授权
--- 执行前请先：USE 你的数据库名;
+-- 默认库名取 application-druid.yml 中的 ry-vue
+-- 如果你本地改了库名，请把下面的 USE 改成你的实际库名
 -- ============================================================
 
 SET NAMES utf8mb4;
+USE `ry-vue`;
 
 DROP TABLE IF EXISTS repair_request;
 
@@ -44,9 +46,12 @@ INSERT INTO sys_menu VALUES(2322, '删除报修', '2302', '3', '', '', '', '', 1
 
 INSERT INTO sys_role_menu VALUES ('2', '2300');
 INSERT INTO sys_role_menu VALUES ('2', '2301');
+INSERT INTO sys_role_menu VALUES ('2', '2302');
 INSERT INTO sys_role_menu VALUES ('2', '2310');
 INSERT INTO sys_role_menu VALUES ('2', '2311');
 INSERT INTO sys_role_menu VALUES ('2', '2312');
+INSERT INTO sys_role_menu VALUES ('2', '2320');
+INSERT INTO sys_role_menu VALUES ('2', '2321');
 
 INSERT INTO sys_role_menu VALUES ('1', '2300');
 INSERT INTO sys_role_menu VALUES ('1', '2302');
