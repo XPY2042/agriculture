@@ -7,7 +7,8 @@
             <i :class="networkOk ? 'el-icon-success' : 'el-icon-warning'" class="stat-card__icon" />
             <div>
               <div class="stat-card__value">{{ networkOk ? t.networkConnected : t.networkUnchecked }}</div>
-              <div class="stat-card__label">{{ t.serverOutbound }}</div>
+              <div class="stat-card__label" v-if="pingMs != null">{{ t.pingCost.replace('{ms}', pingMs) }}</div>
+              <div class="stat-card__label" v-else>{{ t.notYetPinged }}</div>
             </div>
           </div>
         </el-card>
@@ -15,10 +16,10 @@
       <el-col :xs="24" :sm="8">
         <el-card shadow="hover" class="stat-card stat-card--info">
           <div class="stat-card__inner">
-            <i class="el-icon-time stat-card__icon" />
+            <i class="el-icon-cpu stat-card__icon" />
             <div>
-              <div class="stat-card__value">{{ pingMs != null ? pingMs + ' ms' : '--' }}</div>
-              <div class="stat-card__label">{{ t.pingLatency }}</div>
+              <div class="stat-card__value">{{ nodeOptions.length }}</div>
+              <div class="stat-card__label">{{ t.sensorNode }}</div>
             </div>
           </div>
         </el-card>
@@ -26,10 +27,10 @@
       <el-col :xs="24" :sm="8">
         <el-card shadow="hover" class="stat-card stat-card--primary">
           <div class="stat-card__inner">
-            <i class="el-icon-s-operation stat-card__icon" />
+            <i class="el-icon-s-order stat-card__icon" />
             <div>
               <div class="stat-card__value">{{ total }}</div>
-              <div class="stat-card__label">{{ t.remoteLogCount }}</div>
+              <div class="stat-card__label">{{ t.commandRecord }}</div>
             </div>
           </div>
         </el-card>
@@ -131,41 +132,42 @@
       </el-col>
     </el-row>
 
-    <el-card shadow="never" class="mt12">
+    <el-card shadow="never" class="panel-card mt12">
       <div slot="header" class="panel-header">
-        <span><i class="el-icon-document"></i> {{ t.remoteLog }}</span>
+        <span><i class="el-icon-s-order"></i> {{ t.commandRecords }}</span>
         <el-button type="text" size="mini" style="float: right; padding: 3px 0" @click="getList">{{ t.refresh }}</el-button>
       </div>
-      <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" label-width="80px">
-        <el-form-item :label="t.node" prop="nodeId">
-          <el-select v-model="queryParams.nodeId" :placeholder="t.allNodes" clearable filterable style="width: 200px">
-            <el-option v-for="n in nodeOptions" :key="n.nodeId" :label="n.nodeName" :value="n.nodeId" />
+      <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" label-width="88px">
+        <el-form-item :label="t.sensorNode" prop="nodeId">
+          <el-select v-model="queryParams.nodeId" :placeholder="t.allNodes" clearable filterable style="width: 180px">
+            <el-option v-for="n in nodeOptions" :key="n.nodeId" :label="n.nodeName + ' (' + n.nodeCode + ')'" :value="n.nodeId" />
           </el-select>
         </el-form-item>
-        <el-form-item :label="t.status" prop="status">
-          <el-select v-model="queryParams.status" :placeholder="t.all" clearable style="width: 120px">
-            <el-option :label="t.success" value="1" />
-            <el-option :label="t.fail" value="2" />
+        <el-form-item :label="t.cmdStatus" prop="status">
+          <el-select v-model="queryParams.status" :placeholder="t.allStatus" clearable style="width: 120px">
+            <el-option :label="t.statusPending" value="0" />
+            <el-option :label="t.statusOk" value="1" />
+            <el-option :label="t.statusFail" value="2" />
           </el-select>
         </el-form-item>
         <el-form-item>
           <el-button type="primary" icon="el-icon-search" size="mini" @click="handleQuery">{{ t.search }}</el-button>
-          <el-button icon="el-icon-refresh" size="mini" @click="resetQuery">{{ t.reset }}</el-button>
+          <el-button type="warning" plain icon="el-icon-download" size="mini" @click="handleExport" v-hasPermi="['agri:remote:view']">导出Excel</el-button>
         </el-form-item>
       </el-form>
-      <el-table v-loading="loading" :data="commandList" border>
-        <el-table-column :label="t.colTime" prop="createTime" width="160" />
-        <el-table-column :label="t.colNode" prop="nodeName" min-width="120" show-overflow-tooltip />
-        <el-table-column :label="t.colCommand" width="120">
+      <el-table v-loading="loading" :data="commandList">
+        <el-table-column :label="t.colId" prop="commandId" width="80" align="center" />
+        <el-table-column :label="t.colNode" prop="nodeName" min-width="150" show-overflow-tooltip />
+        <el-table-column :label="t.colCmdType" width="120">
           <template slot-scope="scope">
-            {{ displayCommandLabel(scope.row) }}
+            <el-tag size="small">{{ scope.row.commandLabel || scope.row.commandType }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column :label="t.colStatus" prop="status" width="80">
+        <el-table-column :label="t.colCmdStatus" width="80" align="center">
           <template slot-scope="scope">
-            <el-tag :type="scope.row.status === '1' ? 'success' : 'danger'" size="mini">
-              {{ scope.row.status === '1' ? t.success : t.fail }}
-            </el-tag>
+            <el-tag v-if="scope.row.status === '1'" type="success" size="small">{{ t.statusOk }}</el-tag>
+            <el-tag v-else-if="scope.row.status === '2'" type="danger" size="small">{{ t.statusFail }}</el-tag>
+            <el-tag v-else type="info" size="small">{{ t.statusPending }}</el-tag>
           </template>
         </el-table-column>
         <el-table-column :label="t.colResult" prop="resultMessage" min-width="220" show-overflow-tooltip />
@@ -189,9 +191,7 @@ import { listUser } from '@/api/system/user'
 import { simulateReading } from '@/api/agri/reading'
 import { getNetworkStatus, pingNetwork, fetchNetworkUrl, getOpenMeteoWeather } from '@/api/agri/network'
 import { listRemoteCommand, sendRemoteCommand } from '@/api/agri/remote'
-
 const t = labelsZh
-
 export default {
   name: 'AgriRemoteLink',
   data() {
@@ -223,7 +223,7 @@ export default {
   },
   computed: {
     isAdmin() {
-      return this.$store.getters.id === 1
+      return this.$store.getters.roles.includes('admin')
     },
     weatherLine() {
       if (!this.weatherResult) return ''
@@ -245,29 +245,29 @@ export default {
   methods: {
     fmt(v) {
       if (v === undefined || v === null) return '--'
-      return Number(v).toFixed(2)
+      return Number(v).toFixed(1)
     },
     fmtIntOrDec(v) {
       if (v === undefined || v === null) return '--'
       const n = Number(v)
-      return Number.isInteger(n) ? String(n) : n.toFixed(1)
+      return Number.isInteger(n) ? n : n.toFixed(1)
     },
     cmdButtonType(type) {
       if (type === 'REBOOT') return 'danger'
       if (type === 'READ_SENSOR') return 'primary'
       if (type.endsWith('_ON')) return 'success'
-      return 'warning'
+      return ''
     },
     cmdIcon(type) {
       if (type.startsWith('IRRIGATE')) return 'el-icon-heavy-rain'
       if (type.startsWith('FAN')) return 'el-icon-wind-power'
       if (type === 'READ_SENSOR') return 'el-icon-odometer'
-      return 'el-icon-refresh-right'
+      return 'el-icon-set-up'
     },
     loadUsers() {
       listUser({ pageNum: 1, pageSize: 500, status: '0' }).then(res => {
         this.userOptions = res.rows || []
-      })
+      }).catch(() => {})
     },
     onOwnerUserChange() {
       this.operateNodeId = undefined
@@ -287,14 +287,14 @@ export default {
         if (!this.operateNodeId && this.nodeOptions.length) {
           this.operateNodeId = this.nodeOptions[0].nodeId
         }
-      })
+      }).catch(() => {})
     },
     displayCommandLabel(row) {
       if (row && row.commandType && t.commandTypes[row.commandType]) {
         return t.commandTypes[row.commandType]
       }
       let label = (row && row.commandLabel) ? row.commandLabel : ''
-      return label.replace(/\u704c\u6d43/g, '\u704c\u6e89').replace(/\u704c\u6d4d/g, '\u704c\u6e89')
+      return label || '--'
     },
     loadNetworkStatus() {
       this.statusLoading = true
@@ -335,7 +335,7 @@ export default {
       if (!this.operateNodeId) return
       simulateReading(this.operateNodeId).then(() => {
         this.$modal.msgSuccess(t.simulateOk)
-      })
+      }).catch(() => {})
     },
     handlePing() {
       pingNetwork().then(res => {
@@ -353,7 +353,7 @@ export default {
         if (!this.weatherResult) {
           this.$modal.msgWarning(t.weatherFail)
         }
-      })
+      }).catch(() => {})
     },
     handleFetch() {
       if (!this.fetchUrl) {
@@ -363,7 +363,10 @@ export default {
       fetchNetworkUrl(this.fetchUrl).then(res => {
         const body = res.data
         this.fetchResult = typeof body === 'string' ? body : JSON.stringify(body, null, 2)
-      })
+      }).catch(() => {})
+    },
+    handleExport() {
+      this.download('agri/remote/command/export', { ...this.queryParams }, `远程指令_${Date.now()}.xlsx`)
     }
   }
 }

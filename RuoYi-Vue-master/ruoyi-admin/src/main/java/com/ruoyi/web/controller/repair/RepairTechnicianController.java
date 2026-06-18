@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import com.ruoyi.common.annotation.Log;
 import com.ruoyi.common.core.controller.BaseController;
@@ -19,6 +20,8 @@ import com.ruoyi.common.enums.BusinessType;
 import com.ruoyi.common.utils.poi.ExcelUtil;
 import com.ruoyi.system.domain.RepairRequest;
 import com.ruoyi.system.service.IRepairRequestService;
+import com.ruoyi.system.domain.vo.RepairStatsVo;
+import com.ruoyi.system.mapper.RepairRequestMapper;
 
 /**
  * 维修人员工单管理
@@ -29,6 +32,9 @@ public class RepairTechnicianController extends BaseController
 {
     @Autowired
     private IRepairRequestService repairRequestService;
+
+    @Autowired
+    private RepairRequestMapper repairRequestMapper;
 
     /**
      * 工单池列表 - 所有待受理报修
@@ -186,5 +192,34 @@ public class RepairTechnicianController extends BaseController
         List<RepairRequest> list = repairRequestService.selectTechnicianAssigned(repairRequest);
         ExcelUtil<RepairRequest> util = new ExcelUtil<RepairRequest>(RepairRequest.class);
         util.exportExcel(response, list, "我的工单");
+    }
+
+    // ====== 统计端点 ======
+
+    /** 工单状态分布 */
+    @PreAuthorize("@ss.hasPermi('repair:tech:list') or @ss.hasPermi('repair:admin:list')")
+    @GetMapping("/statistics/status")
+    public AjaxResult statusStats()
+    {
+        List<RepairStatsVo> list = repairRequestMapper.countByStatus();
+        return success(list);
+    }
+
+    /** 维修人员工作量 */
+    @PreAuthorize("@ss.hasPermi('repair:tech:list') or @ss.hasPermi('repair:admin:list')")
+    @GetMapping("/statistics/technician")
+    public AjaxResult technicianStats()
+    {
+        List<RepairStatsVo> list = repairRequestMapper.techStats();
+        return success(list);
+    }
+
+    /** 费用趋势 */
+    @PreAuthorize("@ss.hasPermi('repair:tech:list') or @ss.hasPermi('repair:admin:list')")
+    @GetMapping("/statistics/cost-trend")
+    public AjaxResult costTrend(@RequestParam(defaultValue = "6") int months)
+    {
+        List<RepairStatsVo> list = repairRequestMapper.costTrendByMonth(Math.min(months, 24));
+        return success(list);
     }
 }

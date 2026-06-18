@@ -5,7 +5,7 @@
         <span class="label-inline">所属用户</span>
         <el-select
           v-model="ownerUser"
-          placeholder="全部用户"
+          placeholder="请先选择用户"
           filterable
           clearable
           style="width: 220px"
@@ -26,9 +26,10 @@
           placeholder="请选择节点"
           filterable
           style="width: 220px"
+          :disabled="isAdmin && !ownerUser"
           @change="loadAll"
         >
-          <el-option v-for="n in nodeOptions" :key="n.nodeId" :label="(n.createBy ? n.createBy + ' · ' : '') + n.nodeName + ' (' + n.nodeCode + ')'" :value="n.nodeId" />
+          <el-option v-for="n in nodeOptions" :key="n.nodeId" :label="n.nodeName + ' (' + n.nodeCode + ')'" :value="n.nodeId" />
         </el-select>
       </el-col>
       <el-col :xs="24" :sm="8" :md="6">
@@ -42,10 +43,19 @@
       </el-col>
       <el-col :xs="24" :sm="6" :md="10">
         <el-button type="primary" icon="el-icon-refresh" size="small" @click="loadAll" v-hasPermi="['agri:monitor:view']">刷新数据</el-button>
+        <el-button type="warning" plain icon="el-icon-download" size="small" @click="handleExport" v-hasPermi="['agri:monitor:view']">导出Excel</el-button>
         <el-button type="success" icon="el-icon-upload2" size="small" @click="doSimulate" v-hasPermi="['agri:monitor:ingest']" :disabled="!nodeId">模拟上报</el-button>
         <el-button type="info" icon="el-icon-connection" size="small" @click="checkNetwork" v-hasPermi="['agri:monitor:view']">出网检测</el-button>
       </el-col>
     </el-row>
+
+    <el-alert
+      v-if="isAdmin && !ownerUser"
+      title="请先选择需要查看的用户，再选择其传感节点。"
+      type="info"
+      :closable="false"
+      class="mb8"
+    />
 
     <el-row :gutter="12" v-if="latest">
       <el-col :xs="12" :sm="6" :md="4">
@@ -224,8 +234,9 @@ export default {
   mounted() {
     if (this.isAdmin) {
       this.loadUsers()
+    } else {
+      this.loadNodes()
     }
-    this.loadNodes()
     this.loadWeather()
     this.startAlarmPoll()
     window.addEventListener('resize', this.resizeChart)
@@ -275,11 +286,17 @@ export default {
       this.advice = null
       this.nodeAlarms = []
       this.renderChart([])
-      this.loadNodes()
+      if (this.ownerUser) {
+        this.loadNodes()
+      }
     },
     loadNodes() {
+      if (this.isAdmin && !this.ownerUser) {
+        this.nodeOptions = []
+        return
+      }
       const params = { pageNum: 1, pageSize: 500, status: '0' }
-      if (this.isAdmin && this.ownerUser) {
+      if (this.isAdmin) {
         params.createBy = this.ownerUser
       }
       listAgriNode(params).then(res => {
@@ -409,6 +426,9 @@ export default {
           ]
         }, true)
       })
+    },
+    handleExport() {
+      this.download('agri/reading/export', { nodeId: this.nodeId, hours: this.hours }, `传感器数据_${Date.now()}.xlsx`)
     }
   }
 }

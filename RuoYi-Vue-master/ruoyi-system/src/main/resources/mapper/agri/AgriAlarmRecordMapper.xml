@@ -80,4 +80,30 @@
             handle_time = #{handleTime}
         where alarm_id = #{alarmId}
     </update>
+
+    <!-- ====== 统计查询 ====== -->
+    <select id="countByMetric" resultType="com.ruoyi.system.domain.vo.AlarmStatsVo">
+        select metric_name as name, max(metric_code) as code, count(*) as count
+        from agri_alarm_record
+        group by metric_name
+        order by count desc
+    </select>
+
+    <select id="countByLevel" resultType="com.ruoyi.system.domain.vo.AlarmStatsVo">
+        select
+            case when alarm_level = '1' then '警告' when alarm_level = '2' then '严重' else '未知' end as name,
+            alarm_level as code,
+            count(*) as count
+        from agri_alarm_record
+        group by alarm_level
+        order by alarm_level
+    </select>
+
+    <select id="trendByDay" resultType="com.ruoyi.system.domain.vo.AlarmTrendVo">
+        select date_format(alarm_time, '%Y-%m-%d') as dateStr, count(*) as alarmCount
+        from agri_alarm_record
+        where alarm_time >= date_sub(now(), interval #{days} day)
+        group by date_format(alarm_time, '%Y-%m-%d')
+        order by dateStr
+    </select>
 </mapper>

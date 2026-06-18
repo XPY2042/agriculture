@@ -159,4 +159,41 @@
         where request_id = #{requestId} and status = '1'
           and technician_id = #{technicianId}
     </update>
+
+    <!-- ====== 统计查询 ====== -->
+    <select id="countByStatus" resultType="com.ruoyi.system.domain.vo.RepairStatsVo">
+        select status as code,
+               case when status = '0' then '待受理'
+                    when status = '1' then '处理中'
+                    when status = '2' then '已完成'
+                    when status = '3' then '已取消' end as label,
+               count(*) as count
+        from repair_request
+        where del_flag = '0'
+        group by status
+        order by status
+    </select>
+
+    <select id="techStats" resultType="com.ruoyi.system.domain.vo.RepairStatsVo">
+        select t.nick_name as label,
+               count(*) as count,
+               coalesce(sum(r.repair_cost), 0) as totalCost
+        from repair_request r
+        join sys_user t on r.technician_id = t.user_id
+        where r.status = '2' and r.del_flag = '0'
+        group by r.technician_id, t.nick_name
+        order by count desc
+    </select>
+
+    <select id="costTrendByMonth" resultType="com.ruoyi.system.domain.vo.RepairStatsVo">
+        select date_format(repair_finish_at, '%Y-%m') as label,
+               count(*) as count,
+               coalesce(sum(repair_cost), 0) as totalCost
+        from repair_request
+        where status = '2'
+          and del_flag = '0'
+          and repair_finish_at >= date_sub(now(), interval #{months} month)
+        group by date_format(repair_finish_at, '%Y-%m')
+        order by label
+    </select>
 </mapper>

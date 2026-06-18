@@ -122,6 +122,9 @@
           <el-radio-button label="1">{{ t.tabDone }}</el-radio-button>
         </el-radio-group>
       </el-col>
+      <el-col :span="1.5">
+        <el-button type="warning" plain icon="el-icon-download" size="mini" @click="handleExport" v-hasPermi="['agri:monitor:view']">导出Excel</el-button>
+      </el-col>
       <right-toolbar :showSearch.sync="showSearch" @queryTable="getList" />
     </el-row>
 
@@ -451,6 +454,9 @@ export default {
     },
     goMonitor() {
       this.$router.push({ path: '/agri/agriEnv' }).catch(() => {})
+    },
+    handleExport() {
+      this.download('agri/alarm/export', { ...this.queryParams }, `告警数据_${Date.now()}.xlsx`)
     }
   }
 }

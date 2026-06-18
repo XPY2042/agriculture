@@ -174,6 +174,9 @@ public class AgriSensorReadingController extends BaseController
         reading.setAirHumidityPct(bd(r.nextInt(350, 901), 10));
         reading.setLightLux(r.nextInt(5000, 45001));
         reading.setSoilTempC(bd(r.nextInt(140, 281), 10));
+        reading.setSoilPh(bd(r.nextInt(45, 81), 10));       // pH 4.5~8.0
+        reading.setCo2Ppm(r.nextInt(350, 1201));             // CO2 350~1200ppm
+        reading.setWaterPh(bd(r.nextInt(62, 85), 10));       // water pH 6.2~8.5
         reading.setReadingTime(new Date());
         agriSensorReadingService.insertAgriSensorReading(reading);
         return success(reading);

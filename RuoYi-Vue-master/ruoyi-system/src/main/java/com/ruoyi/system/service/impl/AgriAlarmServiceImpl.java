@@ -59,7 +59,10 @@ public class AgriAlarmServiceImpl implements IAgriAlarmService
             reading.getAirTempC(),
             reading.getAirHumidityPct(),
             reading.getLightLux(),
-            reading.getSoilTempC());
+            reading.getSoilTempC(),
+            reading.getSoilPh(),
+            reading.getCo2Ppm(),
+            reading.getWaterPh());
         if (candidates.isEmpty())
         {
             return 0;

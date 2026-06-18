@@ -19,6 +19,9 @@
       <el-col :span="1.5">
         <el-button type="primary" plain icon="el-icon-plus" size="mini" @click="handleAdd" v-hasPermi="['repair:apply:add']">提交报修</el-button>
       </el-col>
+      <el-col :span="1.5">
+        <el-button type="warning" plain icon="el-icon-download" size="mini" @click="handleExport" v-hasPermi="['repair:apply:list']">导出Excel</el-button>
+      </el-col>
       <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
@@ -162,6 +165,9 @@ export default {
           })
         }
       })
+    },
+    handleExport() {
+      this.download('repair/request/export', { ...this.queryParams }, `我的报修_${Date.now()}.xlsx`)
     }
   }
 }
