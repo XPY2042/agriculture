@@ -173,6 +173,21 @@ export const dynamicRoutes = [
         meta: { title: '维修记录', activeMenu: '/repair/technician/history' }
       }
     ]
+  },
+  // 维修统计
+  {
+    path: '/repair/statistics',
+    component: Layout,
+    hidden: true,
+    permissions: ['repair:admin:list', 'repair:tech:list'],
+    children: [
+      {
+        path: '',
+        component: () => import('@/views/repair/statistics/index'),
+        name: 'RepairStatistics',
+        meta: { title: '维修统计', activeMenu: '/repair/statistics' }
+      }
+    ]
   }
 ]
 

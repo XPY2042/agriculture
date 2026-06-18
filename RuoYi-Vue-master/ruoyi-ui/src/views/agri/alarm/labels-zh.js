@@ -68,5 +68,8 @@ export default {
   metricAirH: '\u7a7a\u6c14\u6e7f\u5ea6',
   metricLight: '\u5149\u7167\u5f3a\u5ea6',
   metricSoilT: '\u571f\u58e4\u6e29\u5ea6',
+  metricSoilPh: '\u571f\u58e4pH',
+  metricCo2: 'CO2\u6d53\u5ea6',
+  metricWaterPh: '\u6c34\u4f53pH',
   dash: '\u2014'
 }

@@ -1,5 +1,25 @@
 <template>
-  <div class="app-container">
+  <div class="app-container repair-apply-page">
+    <!-- ====== 统计图表区 ====== -->
+    <div class="stats-row">
+      <!-- 报修地点分布柱状图 -->
+      <div class="stats-card">
+        <div class="stats-card__head">报修地点分布</div>
+        <div class="stats-card__body"><div ref="locChart" class="stats-chart" /></div>
+      </div>
+      <!-- 高频报修原因占比饼图 -->
+      <div class="stats-card">
+        <div class="stats-card__head">高频报修原因占比</div>
+        <div class="stats-card__body"><div ref="reasonChart" class="stats-chart" /></div>
+      </div>
+      <!-- 设备故障类型统计环形图 -->
+      <div class="stats-card">
+        <div class="stats-card__head">设备故障类型统计</div>
+        <div class="stats-card__body"><div ref="typeChart" class="stats-chart" /></div>
+      </div>
+    </div>
+
+    <!-- ====== 原有功能区 ====== -->
     <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="88px">
       <el-form-item label="报修原因" prop="title">
         <el-input v-model="queryParams.title" placeholder="报修原因" clearable @keyup.enter.native="handleQuery" />
@@ -92,6 +112,8 @@
 </template>
 
 <script>
+import * as echarts from 'echarts'
+require('echarts/theme/macarons')
 import { listRepairRequest, getRepairRequest, addRepairRequest, cancelRepairRequest } from '@/api/repair/request'
 
 const STATUS_OPTIONS = [
@@ -100,6 +122,23 @@ const STATUS_OPTIONS = [
   { value: '2', label: '已完成' },
   { value: '3', label: '已取消' }
 ]
+
+// 故障类型分类规则（根据报修原因关键词匹配）
+const FAULT_CATEGORIES = [
+  { key: '灌溉设备', keywords: ['灌溉', '水', '漏水', '阀门', '水管', '泵', '滴灌', '喷灌'] },
+  { key: '传感器检测', keywords: ['传感器', '探头', '检测', '监测', '感应', '读数', '采集'] },
+  { key: '环境控制', keywords: ['温度', '湿度', '光照', '通风', '遮阳', '风机', '湿帘', 'CO2', '二氧化碳'] },
+  { key: '结构设施', keywords: ['大棚', '温室', '棚膜', '骨架', '墙', '门', '窗', '覆盖'] },
+  { key: '电气系统', keywords: ['电', '线路', '开关', '控制柜', '配电', '电机', '电源'] }
+]
+
+function classifyFault(title) {
+  if (!title) return '其他'
+  for (const cat of FAULT_CATEGORIES) {
+    if (cat.keywords.some(kw => title.includes(kw))) return cat.key
+  }
+  return '其他'
+}
 
 export default {
   name: 'RepairApply',
@@ -119,26 +158,94 @@ export default {
       rules: {
         title: [{ required: true, message: '报修原因不能为空', trigger: 'blur' }],
         description: [{ required: true, message: '问题描述不能为空', trigger: 'blur' }]
-      }
+      },
+      locChartInst: null,
+      reasonChartInst: null,
+      typeChartInst: null
     }
   },
   created() { this.getList() },
+  mounted() { window.addEventListener('resize', this.resizeCharts) },
+  beforeDestroy() {
+    window.removeEventListener('resize', this.resizeCharts);
+    ['locChartInst', 'reasonChartInst', 'typeChartInst'].forEach(k => { if (this[k]) { this[k].dispose(); this[k] = null } })
+  },
   methods: {
-    statusLabel(status) {
-      const item = STATUS_OPTIONS.find(o => o.value === status)
-      return item ? item.label : status
-    },
-    statusTagType(status) {
-      const map = { '0': 'warning', '1': '', '2': 'success', '3': 'info' }
-      return map[status] || 'info'
-    },
+    statusLabel(status) { const item = STATUS_OPTIONS.find(o => o.value === status); return item ? item.label : status },
+    statusTagType(status) { const map = { '0': 'warning', '1': '', '2': 'success', '3': 'info' }; return map[status] || 'info' },
     getList() {
       this.loading = true
       listRepairRequest(this.queryParams).then(response => {
-        this.requestList = response.rows
-        this.total = response.total
-        this.loading = false
-      })
+        this.requestList = response.rows; this.total = response.total; this.loading = false
+        this.loadStats()  // 数据加载后同步刷新统计图表
+      }).catch(() => { this.loading = false })
+    },
+    // 获取全量数据用于统计（取消分页限制，共用相同筛选条件）
+    loadStats() {
+      listRepairRequest({ ...this.queryParams, pageNum: 1, pageSize: 9999 }).then(response => {
+        const all = response.rows || []
+        this.renderLocChart(all)
+        this.renderReasonChart(all)
+        this.renderTypeChart(all)
+      }).catch(() => {})
+    },
+    // ====== 图表渲染 ======
+    initChart(refKey, instKey) {
+      if (this[instKey]) return this[instKey]
+      if (!this.$refs[refKey]) return null
+      this[instKey] = echarts.init(this.$refs[refKey], 'macarons')
+      return this[instKey]
+    },
+    // 柱状图：报修地点分布
+    renderLocChart(rows) {
+      const chart = this.initChart('locChart', 'locChartInst')
+      if (!chart) return
+      const map = {}
+      rows.forEach(r => { const loc = r.location || '未填写'; map[loc] = (map[loc] || 0) + 1 })
+      const data = Object.entries(map).sort((a, b) => b[1] - a[1])
+      chart.setOption({
+        tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+        grid: { left: '3%', right: '5%', bottom: '10%', top: '5%', containLabel: true },
+        xAxis: { type: 'category', data: data.map(d => d[0]), axisLabel: { rotate: 30, fontSize: 10 } },
+        yAxis: { type: 'value', name: '报修数' },
+        series: [{ type: 'bar', barWidth: '55%', itemStyle: { borderRadius: [4, 4, 0, 0], color: '#409eff' }, data: data.map(d => d[1]) }]
+      }, true)
+    },
+    // 饼图：报修原因占比
+    renderReasonChart(rows) {
+      const chart = this.initChart('reasonChart', 'reasonChartInst')
+      if (!chart) return
+      const map = {}
+      rows.forEach(r => { const t = r.title || '未填写'; map[t] = (map[t] || 0) + 1 })
+      const data = Object.entries(map).map(([name, value]) => ({ name, value }))
+      chart.setOption({
+        tooltip: { trigger: 'item', formatter: '{b}: {c}条 ({d}%)' },
+        legend: { orient: 'vertical', right: 5, top: 'middle', textStyle: { fontSize: 10 } },
+        series: [{ type: 'pie', radius: ['40%', '70%'], center: ['38%', '52%'], label: { fontSize: 10 }, data }]
+      }, true)
+    },
+    // 环形图：设备故障类型统计
+    renderTypeChart(rows) {
+      const chart = this.initChart('typeChart', 'typeChartInst')
+      if (!chart) return
+      const map = {}
+      rows.forEach(r => { const cat = classifyFault(r.title); map[cat] = (map[cat] || 0) + 1 })
+      const data = Object.entries(map).map(([name, value]) => ({ name, value }))
+      const colors = { '灌溉设备': '#67c23a', '传感器检测': '#409eff', '环境控制': '#e6a23c', '结构设施': '#f56c6c', '电气系统': '#909399', '其他': '#c0c4cc' }
+      chart.setOption({
+        tooltip: { trigger: 'item', formatter: '{b}: {c}条 ({d}%)' },
+        legend: { orient: 'vertical', right: 5, top: 'middle', textStyle: { fontSize: 10 } },
+        series: [{
+          type: 'pie', radius: ['45%', '75%'], center: ['38%', '52%'],
+          label: { fontSize: 10 },
+          data,
+          itemStyle: { color: params => colors[params.name] || '#c0c4cc' }
+        }]
+      }, true)
+    },
+    // ====== 原有方法 ======
+    resizeCharts() {
+      ['locChartInst', 'reasonChartInst', 'typeChartInst'].forEach(k => { if (this[k]) this[k].resize() })
     },
     cancel() { this.open = false; this.reset() },
     reset() {
@@ -148,9 +255,7 @@ export default {
     handleQuery() { this.queryParams.pageNum = 1; this.getList() },
     resetQuery() { this.resetForm('queryForm'); this.handleQuery() },
     handleAdd() { this.reset(); this.open = true; this.title = '提交报修' },
-    handleView(row) {
-      getRepairRequest(row.requestId).then(response => { this.detail = response.data; this.detailOpen = true })
-    },
+    handleView(row) { getRepairRequest(row.requestId).then(response => { this.detail = response.data; this.detailOpen = true }) },
     handleCancel(row) {
       this.$modal.confirm('确认取消该报修申请？').then(() => cancelRepairRequest({ requestId: row.requestId }))
         .then(() => { this.getList(); this.$modal.msgSuccess('已取消') }).catch(() => {})
@@ -160,15 +265,24 @@ export default {
         if (valid) {
           addRepairRequest(this.form).then(() => {
             this.$modal.msgSuccess('提交成功，管理员将尽快处理')
-            this.open = false
-            this.getList()
+            this.open = false; this.getList()
           })
         }
       })
     },
-    handleExport() {
-      this.download('repair/request/export', { ...this.queryParams }, `我的报修_${Date.now()}.xlsx`)
-    }
+    handleExport() { this.download('repair/request/export', { ...this.queryParams }, `我的报修_${Date.now()}.xlsx`) }
   }
 }
 </script>
+
+<style scoped>
+/* ====== 统计图表区：三栏均分 ====== */
+.stats-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 18px; }
+.stats-card { background: #fff; border-radius: 10px; box-shadow: 0 1px 6px rgba(0,0,0,.05); overflow: hidden; display: flex; flex-direction: column; }
+.stats-card__head { font-size: 14px; font-weight: 600; color: #303133; padding: 14px 16px; border-bottom: 1px solid #f0f0f0; flex-shrink: 0; }
+.stats-card__body { padding: 6px; flex: 1; min-height: 0; }
+.stats-chart { height: 280px; width: 100%; }
+.mb8 { margin-bottom: 12px; }
+@media (max-width: 1200px) { .stats-row { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 768px) { .stats-row { grid-template-columns: 1fr; } }
+</style>

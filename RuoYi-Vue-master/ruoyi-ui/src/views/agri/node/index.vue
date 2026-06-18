@@ -39,6 +39,7 @@
       <el-col :span="1.5">
         <el-button type="warning" plain icon="el-icon-download" size="mini" @click="handleExport" v-hasPermi="['agri:node:list']">导出Excel</el-button>
       </el-col>
+      <el-button type="text" icon="el-icon-data-line" size="mini" @click="showStats=!showStats">{{ showStats ? '返回列表' : '数据报表' }}</el-button>
       <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
@@ -103,12 +104,27 @@
         <el-button @click="cancel">取 消</el-button>
       </div>
     </el-dialog>
+
+    <el-row v-if="showStats" :gutter="16" class="mt16">
+      <el-col :xs="24" :lg="12">
+        <el-card shadow="never"><div slot="header"><span>节点读数频率</span></div><div ref="nodeBarChart" style="height:320px" /></el-card>
+      </el-col>
+      <el-col :xs="24" :lg="12">
+        <el-card shadow="never">
+          <div slot="header"><span>日均温湿度趋势</span><el-select v-model="statsNodeId" size="mini" style="float:right;width:160px" @change="loadDailyAvg"><el-option v-for="n in nodeList" :key="n.nodeId" :label="n.nodeName" :value="n.nodeId" /></el-select></div>
+          <div ref="dailyChart" style="height:320px" />
+        </el-card>
+      </el-col>
+    </el-row>
   </div>
 </template>
 
 <script>
 import { listAgriNode, getAgriNode, delAgriNode, addAgriNode, updateAgriNode } from '@/api/agri/node'
 import { listUser } from '@/api/system/user'
+import { nodeReadingCount, readingDaily } from '@/api/agri/statistics'
+import * as echarts from 'echarts'
+require('echarts/theme/macarons')
 export default {
   name: 'AgriNode',
   data() {
@@ -118,6 +134,8 @@ export default {
       single: true,
       multiple: true,
       showSearch: true,
+      showStats: false,
+      statsNodeId: null,
       total: 0,
       nodeList: [],
       userOptions: [],
@@ -259,7 +277,32 @@ export default {
     },
     handleExport() {
       this.download('agri/node/export', { ...this.queryParams }, `传感节点_${Date.now()}.xlsx`)
+    },
+    loadNodeStats() {
+      nodeReadingCount().then(res => this.renderNodeBar(res.data || []))
+      if (this.statsNodeId || (this.nodeList && this.nodeList.length)) {
+        const nid = this.statsNodeId || this.nodeList[0].nodeId
+        this.statsNodeId = nid
+        this.loadDailyAvg()
+      }
+    },
+    loadDailyAvg() {
+      if (!this.statsNodeId) return
+      readingDaily(this.statsNodeId, 7).then(res => this.renderDailyChart(res.data || []))
+    },
+    renderNodeBar(data) {
+      if (!this.$refs.nodeBarChart) return
+      const chart = echarts.init(this.$refs.nodeBarChart, 'macarons')
+      chart.setOption({ tooltip:{trigger:'axis'}, xAxis:{type:'category',data:data.map(d=>d.nodeName),axisLabel:{rotate:30}}, yAxis:{type:'value'}, series:[{type:'bar',data:data.map(d=>d.readingCount)}] })
+    },
+    renderDailyChart(data) {
+      if (!this.$refs.dailyChart) return
+      const chart = echarts.init(this.$refs.dailyChart, 'macarons')
+      chart.setOption({ tooltip:{trigger:'axis'}, legend:{data:['均温℃','均湿度%','均土壤湿度%']}, xAxis:{type:'category',data:data.map(d=>d.dateStr)}, yAxis:{type:'value'}, series:[{name:'均温℃',type:'line',smooth:true,data:data.map(d=>d.avgTemp)},{name:'均湿度%',type:'line',smooth:true,data:data.map(d=>d.avgHumidity)},{name:'均土壤湿度%',type:'line',smooth:true,data:data.map(d=>d.avgMoisture)}] })
     }
+  },
+  watch: {
+    showStats(val) { if (val) this.$nextTick(() => this.loadNodeStats()) }
   }
 }
 </script>
