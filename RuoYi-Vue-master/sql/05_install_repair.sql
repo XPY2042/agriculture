@@ -12,6 +12,7 @@ DROP TABLE IF EXISTS repair_request;
 CREATE TABLE repair_request (
   request_id       bigint(20)      NOT NULL AUTO_INCREMENT    COMMENT '报修ID',
   user_id          bigint(20)      NOT NULL                   COMMENT '报修用户ID',
+  node_id          bigint(20)      DEFAULT NULL               COMMENT '关联大棚节点ID',
   title            varchar(100)    NOT NULL DEFAULT ''        COMMENT '报修原因',
   description      varchar(1000)   DEFAULT ''                 COMMENT '问题描述',
   location         varchar(200)    DEFAULT ''                 COMMENT '报修地点',
@@ -26,7 +27,8 @@ CREATE TABLE repair_request (
   remark           varchar(500)    DEFAULT NULL               COMMENT '备注',
   PRIMARY KEY (request_id),
   KEY idx_repair_user_id (user_id),
-  KEY idx_repair_status (status)
+  KEY idx_repair_status (status),
+  KEY idx_repair_node_status (node_id, status, del_flag)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='报修申请';
 
 DELETE FROM sys_role_menu WHERE menu_id IN (2300,2301,2302,2310,2311,2312,2320,2321,2322);
@@ -46,12 +48,9 @@ INSERT INTO sys_menu VALUES(2322, '删除报修', '2302', '3', '', '', '', '', 1
 
 INSERT INTO sys_role_menu VALUES ('2', '2300');
 INSERT INTO sys_role_menu VALUES ('2', '2301');
-INSERT INTO sys_role_menu VALUES ('2', '2302');
 INSERT INTO sys_role_menu VALUES ('2', '2310');
 INSERT INTO sys_role_menu VALUES ('2', '2311');
 INSERT INTO sys_role_menu VALUES ('2', '2312');
-INSERT INTO sys_role_menu VALUES ('2', '2320');
-INSERT INTO sys_role_menu VALUES ('2', '2321');
 
 INSERT INTO sys_role_menu VALUES ('1', '2300');
 INSERT INTO sys_role_menu VALUES ('1', '2302');

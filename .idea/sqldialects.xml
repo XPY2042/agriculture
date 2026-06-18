@@ -26,6 +26,8 @@
     <file url="file://$PROJECT_DIR$/RuoYi-Vue-master/sql/09_install_heatmap.sql" dialect="MySQL" />
     <file url="file://$PROJECT_DIR$/RuoYi-Vue-master/sql/10_add_repair_node_id.sql" dialect="MySQL" />
     <file url="file://$PROJECT_DIR$/RuoYi-Vue-master/sql/11_grant_common_user_features.sql" dialect="MySQL" />
+    <file url="file://$PROJECT_DIR$/RuoYi-Vue-master/sql/12_fix_repair_schema_and_common_access.sql" dialect="MySQL" />
+    <file url="file://$PROJECT_DIR$/RuoYi-Vue-master/sql/13_revoke_common_repair_admin_access.sql" dialect="MySQL" />
     <file url="file://$PROJECT_DIR$/RuoYi-Vue-master/sql/93_fix_user_login.sql" dialect="MySQL" />
     <file url="file://$PROJECT_DIR$/RuoYi-Vue-master/sql/93_restore_sidebar_menus.sql" dialect="MySQL" />
   </component>
