@@ -220,8 +220,27 @@ export default {
       const data = Object.entries(map).map(([name, value]) => ({ name, value }))
       chart.setOption({
         tooltip: { trigger: 'item', formatter: '{b}: {c}条 ({d}%)' },
-        legend: { orient: 'vertical', right: 5, top: 'middle', textStyle: { fontSize: 10 } },
-        series: [{ type: 'pie', radius: ['40%', '70%'], center: ['38%', '52%'], label: { fontSize: 10 }, data }]
+        legend: {
+          type: 'scroll',
+          orient: 'horizontal',
+          left: 8,
+          right: 8,
+          bottom: 0,
+          itemWidth: 10,
+          itemHeight: 10,
+          textStyle: { fontSize: 10 },
+          pageIconSize: 10,
+          pageTextStyle: { fontSize: 10 }
+        },
+        series: [{
+          type: 'pie',
+          radius: ['34%', '60%'],
+          center: ['50%', '42%'],
+          avoidLabelOverlap: true,
+          label: { fontSize: 10, formatter: '{d}%' },
+          labelLine: { length: 8, length2: 6 },
+          data
+        }]
       }, true)
     },
     // 环形图：设备故障类型统计
@@ -234,10 +253,25 @@ export default {
       const colors = { '灌溉设备': '#67c23a', '传感器检测': '#409eff', '环境控制': '#e6a23c', '结构设施': '#f56c6c', '电气系统': '#909399', '其他': '#c0c4cc' }
       chart.setOption({
         tooltip: { trigger: 'item', formatter: '{b}: {c}条 ({d}%)' },
-        legend: { orient: 'vertical', right: 5, top: 'middle', textStyle: { fontSize: 10 } },
+        legend: {
+          type: 'scroll',
+          orient: 'horizontal',
+          left: 8,
+          right: 8,
+          bottom: 0,
+          itemWidth: 10,
+          itemHeight: 10,
+          textStyle: { fontSize: 10 },
+          pageIconSize: 10,
+          pageTextStyle: { fontSize: 10 }
+        },
         series: [{
-          type: 'pie', radius: ['45%', '75%'], center: ['38%', '52%'],
-          label: { fontSize: 10 },
+          type: 'pie',
+          radius: ['36%', '62%'],
+          center: ['50%', '42%'],
+          avoidLabelOverlap: true,
+          label: { fontSize: 10, formatter: '{d}%' },
+          labelLine: { length: 8, length2: 6 },
           data,
           itemStyle: { color: params => colors[params.name] || '#c0c4cc' }
         }]

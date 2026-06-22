@@ -22,6 +22,8 @@ public interface IRepairRequestService
 
     int deleteRepairRequestByIds(Long[] requestIds);
 
+    int countRepairRequest(RepairRequest repairRequest);
+
     void checkRepairRequestOwner(RepairRequest repairRequest, Long currentUserId, boolean admin);
 
     // ====== 维修人员专用 ======

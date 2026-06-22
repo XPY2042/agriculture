@@ -104,6 +104,7 @@ public class RepairRequestController extends BaseController
         if (!isHandlerView())
         {
             RepairRequest existing = repairRequestService.selectRepairRequestById(repairRequest.getRequestId());
+            repairRequestService.checkRepairRequestOwner(existing, getUserId(), false);
         }
 
         return toAjax(repairRequestService.handleRepairRequest(repairRequest));

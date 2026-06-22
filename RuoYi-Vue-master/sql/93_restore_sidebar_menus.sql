@@ -15,8 +15,8 @@ USE `ry-vue`;
 
 ALTER TABLE sys_menu CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
 
-DELETE FROM sys_role_menu WHERE menu_id IN (2100,2101,2102,2103,2104,2110,2111,2112,2113,2114,2120,2121,2122,2130,2131,2132,2133,2134,2135,2136,2137,2200,100,1000,1001,1002,1003,1004,1005,1006,2300,2301,2302,2303,2310,2311,2312,2320,2321,2322,2330,2331,2332,2400,2401,2410,2411);
-DELETE FROM sys_menu WHERE menu_id IN (2100,2101,2102,2103,2104,2110,2111,2112,2113,2114,2120,2121,2122,2130,2131,2132,2133,2134,2135,2136,2137,2200,100,1000,1001,1002,1003,1004,1005,1006,2300,2301,2302,2303,2310,2311,2312,2320,2321,2322,2330,2331,2332,2400,2401,2410,2411);
+DELETE FROM sys_role_menu WHERE menu_id IN (2100,2101,2102,2103,2104,2110,2111,2112,2113,2114,2120,2121,2122,2130,2131,2132,2133,2134,2135,2136,2137,2200,100,1000,1001,1002,1003,1004,1005,1006,2300,2301,2302,2303,2310,2311,2312,2320,2321,2322,2330,2331,2332,2400,2401,2410,2411,2600,2601,2602,2603);
+DELETE FROM sys_menu WHERE menu_id IN (2100,2101,2102,2103,2104,2110,2111,2112,2113,2114,2120,2121,2122,2130,2131,2132,2133,2134,2135,2136,2137,2200,100,1000,1001,1002,1003,1004,1005,1006,2300,2301,2302,2303,2310,2311,2312,2320,2321,2322,2330,2331,2332,2400,2401,2410,2411,2600,2601,2602,2603);
 
 INSERT INTO sys_menu VALUES(2100, UNHEX('E699BAE685A7E5869CE4B89A'), '0', '5', 'agri', NULL, '', '', 1, 0, 'M', '0', '0', '', 'international', 'admin', sysdate(), '', NULL, UNHEX('E699BAE685A7E5869CE4B89AE79BAEE5BD95'));
 INSERT INTO sys_menu VALUES(2101, UNHEX('E78EAFE5A283E79B91E6B58B'), '2100', '1', 'agriEnv', 'agri/monitor/index', '', 'AgriEnvMonitor', 1, 0, 'C', '0', '0', 'agri:monitor:view', 'chart', 'admin', sysdate(), '', NULL, UNHEX('E5AE9EE697B6E8AFBBE695B0E4B88EE8B68BE58ABF'));
@@ -39,6 +39,10 @@ INSERT INTO sys_menu VALUES(2132, UNHEX('E8BF9CE7A88BE6938DE4BD9C'), '2130', '2'
 INSERT INTO sys_menu VALUES(2133, UNHEX('E587BAE7BD91E6A380E6B58B'), '2130', '3', '', '', '', '', 1, 0, 'F', '0', '0', 'agri:remote:view', '#', 'admin', sysdate(), '', NULL, '');
 INSERT INTO sys_menu VALUES(2134, UNHEX('E8BF9CE7A88BE68B89E58F96'), '2130', '4', '', '', '', '', 1, 0, 'F', '0', '0', 'agri:remote:operate', '#', 'admin', sysdate(), '', NULL, '');
 INSERT INTO sys_menu VALUES(2135, UNHEX('E6A8A1E68B9FE4B88AE68AA5'), '2130', '5', '', '', '', '', 1, 0, 'F', '0', '0', 'agri:remote:operate', '#', 'admin', sysdate(), '', NULL, '');
+INSERT INTO sys_menu VALUES(2600, UNHEX('E68AA5E8A1A8E7BB9FE8AEA1'), '2100', '6', 'reportStatistics', 'report/statistics/index', '', 'ReportStatistics', 1, 0, 'C', '0', '0', 'report:statistics:view', 'chart', 'admin', sysdate(), '', NULL, UNHEX('E7BBB4E4BFAEE7AEA1E79086E4B88EE5918AE8ADA6E4B8ADE5BF83E7BB9FE8AEA1E68AA5E8A1A8'));
+INSERT INTO sys_menu VALUES(2601, UNHEX('E68AA5E8A1A8E69FA5E8AFA2'), '2600', '1', '', '', '', '', 1, 0, 'F', '0', '0', 'report:statistics:view', '#', 'admin', sysdate(), '', NULL, '');
+INSERT INTO sys_menu VALUES(2602, UNHEX('E7BBB4E4BFAEE68AA5E8A1A8'), '2600', '2', '', '', '', '', 1, 0, 'F', '0', '0', 'repair:admin:list', '#', 'admin', sysdate(), '', NULL, '');
+INSERT INTO sys_menu VALUES(2603, UNHEX('E5918AE8ADA6E68AA5E8A1A8'), '2600', '3', '', '', '', '', 1, 0, 'F', '0', '0', 'agri:monitor:view', '#', 'admin', sysdate(), '', NULL, '');
 INSERT INTO sys_menu VALUES(2200, UNHEX('E7B3BBE7BB9FE7AEA1E79086'), '0', '5', 'system', NULL, '', '', 1, 0, 'M', '0', '0', '', 'system', 'admin', sysdate(), '', NULL, '');
 INSERT INTO sys_menu VALUES(100, UNHEX('E794A8E688B7E7AEA1E79086'), '2200', '1', 'user', 'system/user/index', '', '', 1, 0, 'C', '0', '0', 'system:user:list', 'user', 'admin', sysdate(), '', NULL, UNHEX('E7B3BBE7BB9FE794A8E688B7E7BBB4E68AA4'));
 INSERT INTO sys_menu VALUES(1000, UNHEX('E794A8E688B7E69FA5E8AFA2'), '100', '1', '', '', '', '', 1, 0, 'F', '0', '0', 'system:user:query', '#', 'admin', sysdate(), '', NULL, '');
@@ -72,6 +76,11 @@ INSERT IGNORE INTO sys_role_menu VALUES
 ('2','2300'),('2','2301'),('2','2310'),('2','2311'),('2','2312'),
 ('2','2400'),('2','2401'),('2','2410'),('2','2411');
 
+-- role_id=4 repair technician
+INSERT IGNORE INTO sys_role_menu VALUES
+('4','2100'),
+('4','2600'),('4','2601'),('4','2602'),('4','2603');
+
 -- role_id=3 agri_admin
 INSERT IGNORE INTO sys_role_menu VALUES
 ('3','2200'),('3','100'),('3','1000'),('3','1001'),('3','1002'),('3','1003'),('3','1004'),('3','1005'),('3','1006'),
@@ -80,6 +89,7 @@ INSERT IGNORE INTO sys_role_menu VALUES
 ('3','2120'),('3','2121'),('3','2122'),
 ('3','2136'),('3','2137'),
 ('3','2130'),('3','2131'),('3','2132'),('3','2133'),('3','2134'),('3','2135'),
+('3','2600'),('3','2601'),('3','2602'),('3','2603'),
 ('3','2300'),('3','2302'),('3','2320'),('3','2321'),('3','2322'),
 ('3','2400'),('3','2401'),('3','2410'),('3','2411');
 
@@ -91,5 +101,6 @@ INSERT IGNORE INTO sys_role_menu VALUES
 ('1','2120'),('1','2121'),('1','2122'),
 ('1','2136'),('1','2137'),
 ('1','2130'),('1','2131'),('1','2132'),('1','2133'),('1','2134'),('1','2135'),
+('1','2600'),('1','2601'),('1','2602'),('1','2603'),
 ('1','2300'),('1','2301'),('1','2302'),('1','2310'),('1','2311'),('1','2312'),('1','2320'),('1','2321'),('1','2322'),
 ('1','2400'),('1','2401'),('1','2410'),('1','2411');

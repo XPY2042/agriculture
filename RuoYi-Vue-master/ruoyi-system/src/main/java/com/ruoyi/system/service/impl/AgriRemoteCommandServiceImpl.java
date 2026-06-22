@@ -20,8 +20,8 @@ public class AgriRemoteCommandServiceImpl implements IAgriRemoteCommandService
 
     static
     {
-        COMMAND_LABELS.put("IRRIGATE_ON", "\u5f00\u542f\u704c\u6d43");
-        COMMAND_LABELS.put("IRRIGATE_OFF", "\u5173\u95ed\u704c\u6d43");
+        COMMAND_LABELS.put("IRRIGATE_ON", "\u5f00\u542f\u704c\u6e89");
+        COMMAND_LABELS.put("IRRIGATE_OFF", "\u5173\u95ed\u704c\u6e89");
         COMMAND_LABELS.put("FAN_ON", "\u5f00\u542f\u901a\u98ce");
         COMMAND_LABELS.put("FAN_OFF", "\u5173\u95ed\u901a\u98ce");
         COMMAND_LABELS.put("READ_SENSOR", "\u89e6\u53d1\u4f20\u611f\u8bfb\u6570");

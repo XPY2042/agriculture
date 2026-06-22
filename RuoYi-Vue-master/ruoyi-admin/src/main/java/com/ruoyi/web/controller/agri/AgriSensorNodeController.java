@@ -1,6 +1,5 @@
 package com.ruoyi.web.controller.agri;
 
-import java.util.Collections;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -39,14 +38,7 @@ public class AgriSensorNodeController extends BaseController
     @GetMapping("/list")
     public TableDataInfo list(AgriSensorNode node)
     {
-        if (SecurityUtils.isAdmin())
-        {
-            if (StringUtils.isEmpty(node.getCreateBy()))
-            {
-                return getDataTable(Collections.emptyList());
-            }
-        }
-        else
+        if (!SecurityUtils.isAdmin())
         {
             node.setCreateBy(getUsername());
         }

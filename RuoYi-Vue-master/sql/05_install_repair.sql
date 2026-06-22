@@ -19,6 +19,13 @@ CREATE TABLE repair_request (
   contact_phone    varchar(20)     DEFAULT ''                 COMMENT '联系电话',
   status           char(1)         DEFAULT '0'                COMMENT '0待受理 1处理中 2已完成 3已取消',
   admin_reply      varchar(500)    DEFAULT ''                 COMMENT '管理员回复',
+  technician_id    bigint(20)      DEFAULT NULL               COMMENT '受理维修人员ID',
+  accepted_at      datetime        DEFAULT NULL               COMMENT '受理时间',
+  repair_start_at  datetime        DEFAULT NULL               COMMENT '维修开始时间',
+  repair_finish_at datetime        DEFAULT NULL               COMMENT '维修完成时间',
+  repair_log       text                                       COMMENT '维修日志/工作记录',
+  parts_used       varchar(500)    DEFAULT ''                 COMMENT '使用配件',
+  repair_cost      decimal(10,2)   DEFAULT NULL               COMMENT '维修费用',
   del_flag         char(1)         DEFAULT '0'                COMMENT '0存在 2删除',
   create_by        varchar(64)     DEFAULT ''                 COMMENT '创建者',
   create_time      datetime                                   COMMENT '创建时间',
@@ -28,7 +35,8 @@ CREATE TABLE repair_request (
   PRIMARY KEY (request_id),
   KEY idx_repair_user_id (user_id),
   KEY idx_repair_status (status),
-  KEY idx_repair_node_status (node_id, status, del_flag)
+  KEY idx_repair_node_status (node_id, status, del_flag),
+  KEY idx_repair_technician_status (technician_id, status, del_flag)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='报修申请';
 
 DELETE FROM sys_role_menu WHERE menu_id IN (2300,2301,2302,2310,2311,2312,2320,2321,2322);

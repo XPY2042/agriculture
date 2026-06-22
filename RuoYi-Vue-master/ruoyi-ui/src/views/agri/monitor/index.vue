@@ -10,7 +10,7 @@
           </el-select>
         </template>
         <span class="filter-label">传感节点</span>
-        <el-select v-model="nodeId" placeholder="选择节点" filterable size="small" class="filter-select filter-node" :disabled="isAdmin && !ownerUser" @change="loadAll">
+        <el-select v-model="nodeId" placeholder="选择节点" filterable size="small" class="filter-select filter-node" @change="loadAll">
           <el-option v-for="n in nodeOptions" :key="n.nodeId" :label="n.nodeName + ' (' + n.nodeCode + ')'" :value="n.nodeId" />
         </el-select>
         <span class="filter-label">时间窗口</span>
@@ -28,9 +28,6 @@
         <el-button type="success" icon="el-icon-upload2" size="small" @click="doSimulate" v-hasPermi="['agri:monitor:ingest']" :disabled="!nodeId">模拟上报</el-button>
       </div>
     </div>
-
-    <!-- ========== 管理员提示 ========== -->
-    <el-alert v-if="isAdmin && !ownerUser" title="请先选择需要查看的用户，再选择其传感节点" type="info" :closable="false" class="mb16" />
 
     <!-- ========== 传感器数据卡片 - 网格布局 ========== -->
     <div class="metrics-grid" v-if="latest">
@@ -111,7 +108,7 @@
       <div class="weather-inline" v-if="weatherPublic">
         <div class="weather-stat"><span class="weather-val">{{ fmt(weatherPublic.temperatureC) }}℃</span><span class="weather-lbl">气温</span></div>
         <div class="weather-stat"><span class="weather-val">{{ fmtIntOrDec(weatherPublic.relativeHumidityPct) }}%</span><span class="weather-lbl">相对湿度</span></div>
-        <div class="weather-meta">观测 {{ weatherPublic.observationTime || '--' }} · {{ weatherPublic.latitude }}, {{ weatherPublic.longitude }} · {{ weatherPublic.source }}</div>
+        <div class="weather-meta">观测 {{ weatherPublic.observationTime || '--' }} · {{ weatherCoordinate }} · {{ weatherPublic.source }}</div>
       </div>
       <p v-else-if="!weatherLoading" class="text-muted">未能获取公网气象数据</p>
     </el-card>
@@ -153,6 +150,7 @@ import { listUser } from '@/api/system/user'
 import { pingNetwork, getOpenMeteoWeather } from '@/api/agri/network'
 import { getLatestReading, getTrend, getAdvice, simulateReading } from '@/api/agri/reading'
 import { listAgriAlarm, getUnhandledAlarmCount } from '@/api/agri/alarm'
+import { formatWeatherCoordinate } from '@/utils/agriWeatherLocation'
 
 export default {
   name: 'AgriMonitor',
@@ -175,10 +173,14 @@ export default {
     }
   },
   computed: {
-    isAdmin() { return this.$store.getters.id === 1 }
+    isAdmin() { return this.$store.getters.id === 1 },
+    weatherCoordinate() {
+      if (!this.weatherPublic) return '--'
+      return formatWeatherCoordinate(this.weatherPublic.latitude, this.weatherPublic.longitude)
+    }
   },
   mounted() {
-    if (this.isAdmin) { this.loadUsers() } else { this.loadNodes() }
+    if (this.isAdmin) { this.loadUsers(); this.loadNodes() } else { this.loadNodes() }
     this.loadWeather()
     this.startAlarmPoll()
     window.addEventListener('resize', this.resizeChart)
@@ -197,12 +199,11 @@ export default {
     loadUsers() { listUser({ pageNum: 1, pageSize: 500, status: '0' }).then(res => { this.userOptions = res.rows || [] }) },
     onOwnerUserChange() {
       this.nodeId = undefined; this.nodeOptions = []; this.latest = null; this.advice = null; this.nodeAlarms = []; this.renderChart([])
-      if (this.ownerUser) this.loadNodes()
+      this.loadNodes()
     },
     loadNodes() {
-      if (this.isAdmin && !this.ownerUser) { this.nodeOptions = []; return }
       const params = { pageNum: 1, pageSize: 500, status: '0' }
-      if (this.isAdmin) params.createBy = this.ownerUser
+      if (this.isAdmin && this.ownerUser) params.createBy = this.ownerUser
       listAgriNode(params).then(res => {
         this.nodeOptions = res.rows || []
         if (!this.nodeId && this.nodeOptions.length) { this.nodeId = this.nodeOptions[0].nodeId; this.loadAll() }
@@ -246,7 +247,7 @@ export default {
     },
     loadWeather() {
       this.weatherLoading = true
-      getOpenMeteoWeather(39.9042, 116.4074).then(res => {
+      getOpenMeteoWeather().then(res => {
         const d = res.data
         this.weatherPublic = (d && typeof d === 'object' && (d.temperatureC !== undefined || d.relativeHumidityPct !== undefined)) ? d : null
       }).catch(() => { this.weatherPublic = null }).finally(() => { this.weatherLoading = false })

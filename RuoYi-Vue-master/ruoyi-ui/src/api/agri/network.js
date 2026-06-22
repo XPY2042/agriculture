@@ -1,4 +1,5 @@
 import request from '@/utils/request'
+import { getWeatherLocation } from '@/utils/agriWeatherLocation'
 
 export function getNetworkStatus() {
   return request({
@@ -23,9 +24,12 @@ export function fetchNetworkUrl(url) {
 }
 
 export function getOpenMeteoWeather(latitude, longitude) {
+  const location = latitude === undefined || longitude === undefined
+    ? getWeatherLocation()
+    : { latitude, longitude }
   return request({
     url: '/agri/network/weather',
     method: 'get',
-    params: { latitude, longitude }
+    params: location
   })
 }

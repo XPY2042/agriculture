@@ -46,7 +46,7 @@
               <el-option v-for="u in userOptions" :key="u.userName" :label="u.nickName + ' (' + u.userName + ')'" :value="u.userName" />
             </el-select>
             <label class="field-label">{{ t.sensorNode }}</label>
-            <el-select v-model="operateNodeId" :placeholder="t.selectNode" filterable size="small" class="field-input" :disabled="isAdmin && !ownerUser">
+            <el-select v-model="operateNodeId" :placeholder="t.selectNode" filterable size="small" class="field-input">
               <el-option v-for="n in nodeOptions" :key="n.nodeId" :label="n.nodeName + ' (' + n.nodeCode + ')'" :value="n.nodeId" />
             </el-select>
           </div>
@@ -86,11 +86,13 @@
             <div class="weather-row">
               <div class="weather-field">
                 <span class="field-label-sm">{{ t.latitude }}</span>
-                <el-input-number v-model="weatherLat" :precision="4" :step="0.1" controls-position="right" size="small" class="w-input" />
+                <el-input-number v-model="weatherLat" :precision="4" :step="0.1" controls-position="right" size="small" class="w-input" @change="onWeatherLocationChange" />
+                <span class="coord-unit">{{ latitudeUnit }}</span>
               </div>
               <div class="weather-field">
                 <span class="field-label-sm">{{ t.longitude }}</span>
-                <el-input-number v-model="weatherLon" :precision="4" :step="0.1" controls-position="right" size="small" class="w-input" />
+                <el-input-number v-model="weatherLon" :precision="4" :step="0.1" controls-position="right" size="small" class="w-input" @change="onWeatherLocationChange" />
+                <span class="coord-unit">{{ longitudeUnit }}</span>
               </div>
               <el-button type="info" plain size="small" icon="el-icon-partly-cloudy" v-hasPermi="['agri:remote:view']" @click="handleWeather">{{ t.query }}</el-button>
             </div>
@@ -99,7 +101,7 @@
           <!-- 白名单抓取 -->
           <div class="sub-section">
             <div class="sub-head">{{ t.whitelistFetch }}</div>
-            <el-input v-model="fetchUrl" placeholder="https://api.open-meteo.com/..." size="small">
+            <el-input v-model="fetchUrl" placeholder="https://api.open-meteo.com/..." size="small" @input="fetchUrlEdited = true">
               <el-button slot="append" icon="el-icon-download" v-hasPermi="['agri:remote:operate']" @click="handleFetch">{{ t.fetch }}</el-button>
             </el-input>
             <el-input v-if="fetchResult" type="textarea" :rows="3" class="fetch-result" readonly :value="fetchResult" />
@@ -132,7 +134,7 @@
         <el-table-column :label="t.colId" prop="commandId" width="80" align="center" />
         <el-table-column :label="t.colNode" prop="nodeName" min-width="150" show-overflow-tooltip />
         <el-table-column :label="t.colCmdType" width="120">
-          <template slot-scope="scope"><el-tag size="small">{{ scope.row.commandLabel || scope.row.commandType }}</el-tag></template>
+          <template slot-scope="scope"><el-tag size="small">{{ displayCommandLabel(scope.row) }}</el-tag></template>
         </el-table-column>
         <el-table-column :label="t.colCmdStatus" width="80" align="center">
           <template slot-scope="scope">
@@ -156,6 +158,7 @@ import { listUser } from '@/api/system/user'
 import { simulateReading } from '@/api/agri/reading'
 import { getNetworkStatus, pingNetwork, fetchNetworkUrl, getOpenMeteoWeather } from '@/api/agri/network'
 import { listRemoteCommand, sendRemoteCommand } from '@/api/agri/remote'
+import { DEFAULT_WEATHER_LOCATION, buildOpenMeteoCurrentUrl, getWeatherLocation, latitudeDirection, longitudeDirection, saveWeatherLocation } from '@/utils/agriWeatherLocation'
 const t = labelsZh
 export default {
   name: 'AgriRemoteLink',
@@ -174,22 +177,26 @@ export default {
       networkStatus: null,
       networkOk: false,
       pingMs: null,
-      weatherLat: 39.9042,
-      weatherLon: 116.4074,
+      weatherLat: DEFAULT_WEATHER_LOCATION.latitude,
+      weatherLon: DEFAULT_WEATHER_LOCATION.longitude,
       weatherResult: null,
-      fetchUrl: 'https://api.open-meteo.com/v1/forecast?latitude=39.9&longitude=116.4&current=temperature_2m',
+      fetchUrl: '',
+      fetchUrlEdited: false,
       fetchResult: ''
     }
   },
   computed: {
     isAdmin() { return this.$store.getters.roles.includes('admin') },
+    latitudeUnit() { return latitudeDirection(this.weatherLat) },
+    longitudeUnit() { return longitudeDirection(this.weatherLon) },
     weatherLine() {
       if (!this.weatherResult) return ''
       return t.weatherLine.replace('{t}', this.fmt(this.weatherResult.temperatureC)).replace('{h}', this.fmtIntOrDec(this.weatherResult.relativeHumidityPct)).replace('{time}', this.weatherResult.observationTime || '--')
     }
   },
   mounted() {
-    if (this.isAdmin) { this.loadUsers() } else { this.loadNodes() }
+    this.initWeatherLocation()
+    if (this.isAdmin) { this.loadUsers(); this.loadNodes() } else { this.loadNodes() }
     this.loadNetworkStatus(); this.getList()
   },
   methods: {
@@ -198,18 +205,39 @@ export default {
     cmdButtonType(type) { if (type === 'REBOOT') return 'danger'; if (type === 'READ_SENSOR') return 'primary'; if (type.endsWith('_ON')) return 'success'; return '' },
     cmdIcon(type) { if (type.startsWith('IRRIGATE')) return 'el-icon-heavy-rain'; if (type.startsWith('FAN')) return 'el-icon-wind-power'; if (type === 'READ_SENSOR') return 'el-icon-odometer'; return 'el-icon-set-up' },
     loadUsers() { listUser({ pageNum: 1, pageSize: 500, status: '0' }).then(res => { this.userOptions = res.rows || [] }).catch(() => {}) },
-    onOwnerUserChange() { this.operateNodeId = undefined; this.loadNodes() },
+    onOwnerUserChange() {
+      this.operateNodeId = undefined
+      this.queryParams.nodeId = undefined
+      this.queryParams.pageNum = 1
+      this.loadNodes()
+      this.getList()
+    },
     loadNodes() {
-      if (this.isAdmin && !this.ownerUser) { this.nodeOptions = []; return }
       const params = { pageNum: 1, pageSize: 500, status: '0' }
-      if (this.isAdmin) params.createBy = this.ownerUser
+      if (this.isAdmin && this.ownerUser) params.createBy = this.ownerUser
       listAgriNode(params).then(res => {
         this.nodeOptions = res.rows || []
         if (!this.operateNodeId && this.nodeOptions.length) this.operateNodeId = this.nodeOptions[0].nodeId
       }).catch(() => {})
     },
-    displayCommandLabel(row) { if (row && row.commandType && t.commandTypes[row.commandType]) return t.commandTypes[row.commandType]; let label = (row && row.commandLabel) ? row.commandLabel : ''; return label || '--' },
+    displayCommandLabel(row) { if (row && row.commandType && t.commandTypes[row.commandType]) return t.commandTypes[row.commandType]; let label = (row && row.commandLabel) ? row.commandLabel : ''; return label.replace(/灌[浃浇]/g, '灌溉') || '--' },
     loadNetworkStatus() { this.statusLoading = true; getNetworkStatus().then(res => { this.networkStatus = res.data || null }).finally(() => { this.statusLoading = false }) },
+    initWeatherLocation() {
+      const location = getWeatherLocation()
+      this.weatherLat = location.latitude
+      this.weatherLon = location.longitude
+      this.fetchUrl = buildOpenMeteoCurrentUrl(this.weatherLat, this.weatherLon)
+      this.fetchUrlEdited = false
+    },
+    onWeatherLocationChange() {
+      const location = saveWeatherLocation(this.weatherLat, this.weatherLon)
+      if (!location) return
+      this.weatherLat = location.latitude
+      this.weatherLon = location.longitude
+      if (!this.fetchUrlEdited) {
+        this.fetchUrl = buildOpenMeteoCurrentUrl(location.latitude, location.longitude)
+      }
+    },
     getList() { this.loading = true; listRemoteCommand(this.queryParams).then(res => { this.commandList = res.rows || []; this.total = res.total || 0 }).finally(() => { this.loading = false }) },
     handleQuery() { this.queryParams.pageNum = 1; this.getList() },
     resetQuery() { this.queryParams.nodeId = undefined; this.queryParams.status = undefined; this.handleQuery() },
@@ -219,7 +247,7 @@ export default {
     },
     handleSimulate() { if (!this.operateNodeId) return; simulateReading(this.operateNodeId).then(() => this.$modal.msgSuccess(t.simulateOk)).catch(() => {}) },
     handlePing() { pingNetwork().then(res => { const ms = res.data && res.data.costMs != null ? res.data.costMs : null; this.pingMs = ms; this.networkOk = true; this.$modal.msgSuccess(t.pingOk.replace('{ms}', ms)) }).catch(() => { this.networkOk = false }) },
-    handleWeather() { getOpenMeteoWeather(this.weatherLat, this.weatherLon).then(res => { this.weatherResult = res.data || null; if (!this.weatherResult) this.$modal.msgWarning(t.weatherFail) }).catch(() => {}) },
+    handleWeather() { this.onWeatherLocationChange(); getOpenMeteoWeather(this.weatherLat, this.weatherLon).then(res => { this.weatherResult = res.data || null; if (!this.weatherResult) this.$modal.msgWarning(t.weatherFail) }).catch(() => {}) },
     handleFetch() { if (!this.fetchUrl) { this.$modal.msgWarning(t.urlRequired); return }; fetchNetworkUrl(this.fetchUrl).then(res => { const body = res.data; this.fetchResult = typeof body === 'string' ? body : JSON.stringify(body, null, 2) }).catch(() => {}) },
     handleExport() { this.download('agri/remote/command/export', { ...this.queryParams }, `远程指令_${Date.now()}.xlsx`) }
   }
@@ -266,6 +294,7 @@ export default {
 .weather-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .weather-field { display: flex; align-items: center; gap: 6px; }
 .field-label-sm { font-size: 12px; color: #909399; white-space: nowrap; }
+.coord-unit { min-width: 28px; font-size: 12px; color: #606266; white-space: nowrap; }
 .w-input { width: 140px; }
 .weather-result { font-size: 13px; color: #606266; margin: 0; }
 .fetch-result { margin-top: 6px; }

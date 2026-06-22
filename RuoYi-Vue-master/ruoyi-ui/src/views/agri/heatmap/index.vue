@@ -123,43 +123,62 @@
       </div>
 
       <div class="map-viewport" :style="{ minHeight: mapHeight + 'px' }">
-        <div v-if="displayNodes.length" class="node-layer">
-          <button
-            v-for="(node, index) in displayNodes"
-            :key="node.nodeId"
-            type="button"
-            class="node-marker"
-            :class="'node-marker--' + nodeSeverity(node)"
-            @click="openDetail(node)"
+        <div v-if="positionedNodes.length" class="node-layer">
+          <el-popover
+            v-for="(item, index) in positionedNodes"
+            :key="item.node.nodeId"
+            placement="top"
+            width="260"
+            trigger="hover"
+            popper-class="heatmap-node-popover"
           >
-            <span class="node-pin">
-              <i :class="nodeIcon(node)" />
-              <span class="node-index">{{ index + 1 }}</span>
-            </span>
-            <span class="node-copy">
-              <span class="node-title-row">
-                <span class="node-name" :title="node.nodeName">{{ node.nodeName }}</span>
-                <span v-if="isAdmin" class="owner-badge" :title="'所属用户：' + (node.createBy || '-')">
-                  {{ node.createBy || '-' }}
+            <div class="node-hover-card">
+              <div class="hover-title-row">
+                <span class="hover-name">{{ item.node.nodeName }}</span>
+                <el-tag :type="severityTag(nodeSeverity(item.node))" size="mini">{{ statusLabel(item.node) }}</el-tag>
+              </div>
+              <div class="hover-line">{{ nodeDescription(item.node) }}</div>
+              <div class="hover-line">报修：{{ repairLabel(item.node) }}</div>
+              <div class="hover-line">告警：{{ alarmLabel(item.node) }}</div>
+              <div v-if="isAdmin" class="hover-line">所属用户：{{ item.node.createBy || '-' }}</div>
+            </div>
+            <button
+              slot="reference"
+              type="button"
+              class="node-marker"
+              :class="'node-marker--' + nodeSeverity(item.node)"
+              :style="item.style"
+              @click="openDetail(item.node)"
+            >
+              <span class="node-pin">
+                <i :class="nodeIcon(item.node)" />
+                <span class="node-index">{{ index + 1 }}</span>
+              </span>
+              <span class="node-copy">
+                <span class="node-title-row">
+                  <span class="node-name" :title="item.node.nodeName">{{ item.node.nodeName }}</span>
+                  <span v-if="isAdmin" class="owner-badge" :title="'所属用户：' + (item.node.createBy || '-')">
+                    {{ item.node.createBy || '-' }}
+                  </span>
+                </span>
+                <span class="node-desc" :title="nodeDescription(item.node)">
+                  {{ nodeDescription(item.node) }}
+                </span>
+                <span class="node-state-row">
+                  <span class="state-pill" :class="hasRepair(item.node) ? 'state-pill--repair' : 'state-pill--quiet'">
+                    <i class="el-icon-s-tools" />
+                    {{ hasRepair(item.node) ? '需报修' : '无报修' }}
+                  </span>
+                  <span class="state-pill" :class="hasAlarm(item.node) ? 'state-pill--alarm' : 'state-pill--quiet'">
+                    <i class="el-icon-bell" />
+                    {{ hasAlarm(item.node) ? '有告警' : '无告警' }}
+                  </span>
                 </span>
               </span>
-              <span class="node-desc" :title="nodeDescription(node)">
-                {{ nodeDescription(node) }}
-              </span>
-              <span class="node-state-row">
-                <span class="state-pill" :class="hasRepair(node) ? 'state-pill--repair' : 'state-pill--quiet'">
-                  <i class="el-icon-s-tools" />
-                  {{ repairLabel(node) }}
-                </span>
-                <span class="state-pill" :class="hasAlarm(node) ? 'state-pill--alarm' : 'state-pill--quiet'">
-                  <i class="el-icon-bell" />
-                  {{ alarmLabel(node) }}
-                </span>
-              </span>
-            </span>
-          </button>
+            </button>
+          </el-popover>
         </div>
-        <el-empty v-if="!loading && displayNodes.length === 0" description="暂无符合条件的在线大棚节点" class="map-empty" />
+        <el-empty v-if="!loading && positionedNodes.length === 0" description="暂无符合条件的在线大棚节点" class="map-empty" />
       </div>
     </el-card>
 
@@ -282,6 +301,9 @@ export default {
     displayNodes() {
       return this.sortNodes(this.nodes)
     },
+    positionedNodes() {
+      return this.buildNodeLayout(this.displayNodes)
+    },
     okCount() {
       return this.nodes.filter(n => this.nodeSeverity(n) === 'ok').length
     },
@@ -330,7 +352,7 @@ export default {
     loadData() {
       this.loading = true
       getNodeHeatmap(this.buildQuery()).then(res => {
-        this.nodes = res.data || []
+        this.nodes = this.deduplicateNodes(res.data || [])
         this.lastRefresh = this.parseTime(new Date())
         this.mapHeight = this.calcMapHeight(this.nodes.length)
       }).finally(() => {
@@ -353,10 +375,32 @@ export default {
       this.queryParams.alarmState = alarmState
       this.loadData()
     },
+    deduplicateNodes(list) {
+      const nodeMap = new Map()
+      ;(list || []).forEach(item => {
+        const key = item.nodeId != null && item.nodeId !== ''
+          ? 'id:' + item.nodeId
+          : 'code:' + (item.nodeCode || item.nodeName || Math.random())
+        const current = nodeMap.get(key)
+        if (!current) {
+          nodeMap.set(key, { ...item })
+          return
+        }
+        nodeMap.set(key, {
+          ...current,
+          ...item,
+          alarmCount: Math.max(Number(current.alarmCount || 0), Number(item.alarmCount || 0)),
+          repairCount: Math.max(Number(current.repairCount || 0), Number(item.repairCount || 0)),
+          maxAlarmLevel: String(Math.max(Number(current.maxAlarmLevel || 0), Number(item.maxAlarmLevel || 0))) || current.maxAlarmLevel || item.maxAlarmLevel,
+          maxRepairStatus: String(Math.max(Number(current.maxRepairStatus || 0), Number(item.maxRepairStatus || 0))) || current.maxRepairStatus || item.maxRepairStatus
+        })
+      })
+      return Array.from(nodeMap.values())
+    },
     calcMapHeight(count) {
       if (count <= 0) return 480
-      const rows = Math.ceil(count / 3)
-      return Math.max(480, Math.min(820, rows * 136 + 120))
+      const rows = Math.ceil(count / 4)
+      return Math.max(480, Math.min(980, rows * 180 + 140))
     },
     hasRepair(node) {
       return (node.repairCount || 0) > 0
@@ -417,6 +461,67 @@ export default {
         if (loc !== 0) return loc
         return (a.nodeName || '').localeCompare(b.nodeName || '', 'zh-CN')
       })
+    },
+    buildNodeLayout(nodes) {
+      if (!nodes.length) return []
+      const columns = 4
+      const virtualWidth = 1280
+      const sidePadding = 28
+      const usableWidth = virtualWidth - sidePadding * 2
+      const columnWidth = usableWidth / columns
+      const rowGap = 164
+      const topStart = 22
+      const boxes = []
+      return nodes.map((node, index) => {
+        const row = Math.floor(index / columns)
+        const col = index % columns
+        const seed = Number(node.nodeId || index + 1)
+        const size = this.measureNodeCard(node)
+        const centerBase = sidePadding + col * columnWidth + columnWidth / 2
+        const xShift = ((seed * 17) % 34) - 17
+        const yShift = ((seed * 11) % 26) - 13
+        const minLeft = sidePadding
+        const maxLeft = virtualWidth - sidePadding - size.width
+        let leftPx = Math.max(minLeft, Math.min(maxLeft, centerBase - size.width / 2 + xShift))
+        let topPx = topStart + row * rowGap + yShift
+        let nextBox = { left: leftPx, top: topPx, width: size.width, height: size.height }
+        let guard = 0
+        while (boxes.some(box => this.isBoxOverlapping(nextBox, box)) && guard < 20) {
+          topPx += 22
+          leftPx = Math.max(minLeft, Math.min(maxLeft, leftPx + (guard % 2 === 0 ? 8 : -8)))
+          nextBox = { left: leftPx, top: topPx, width: size.width, height: size.height }
+          guard++
+        }
+        boxes.push(nextBox)
+        return {
+          node,
+          style: {
+            left: (leftPx / virtualWidth * 100) + '%',
+            top: topPx + 'px',
+            width: size.width + 'px'
+          }
+        }
+      })
+    },
+    measureNodeCard(node) {
+      const nameLength = (node.nodeName || '').length
+      const descLength = this.nodeDescription(node).length
+      const width = Math.max(220, Math.min(320, 190 + nameLength * 10 + Math.min(descLength, 24) * 2))
+      const extraLines = descLength > 22 ? 1 : 0
+      return {
+        width,
+        height: 94 + extraLines * 18
+      }
+    },
+    isBoxOverlapping(a, b) {
+      const gapX = 18
+      const gapY = 16
+      return !(
+        a.left + a.width + gapX <= b.left ||
+        b.left + b.width + gapX <= a.left ||
+        a.top + a.height + gapY <= b.top ||
+        b.top + b.height + gapY <= a.top
+      )
     },
     openDetail(node) {
       this.selectedNode = node
@@ -641,23 +746,24 @@ export default {
 }
 
 .node-layer {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 22px;
+  position: relative;
+  min-height: 100%;
 }
 
 .node-marker {
-  display: grid;
-  grid-template-columns: 52px minmax(0, 1fr);
+  position: absolute;
+  display: inline-grid;
+  grid-template-columns: 48px minmax(0, 1fr);
   align-items: center;
-  gap: 12px;
-  width: 100%;
-  min-height: 104px;
-  padding: 14px;
+  gap: 10px;
+  width: 260px;
+  max-width: min(320px, calc(100vw - 96px));
+  min-height: 0;
+  padding: 10px 12px;
   text-align: left;
   background: rgba(255, 255, 255, 0.96);
   border: 2px solid #d8dde5;
-  border-radius: 8px;
+  border-radius: 10px;
   box-shadow: 0 4px 14px rgba(31, 35, 41, 0.08);
   cursor: pointer;
   transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
@@ -679,14 +785,14 @@ export default {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 46px;
-  height: 46px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
   color: #fff;
   box-shadow: 0 3px 10px rgba(31, 35, 41, 0.22);
 
   i {
-    font-size: 24px;
+    font-size: 21px;
   }
 }
 
@@ -736,6 +842,7 @@ export default {
   display: flex;
   flex-direction: column;
   min-width: 0;
+  width: fit-content;
 }
 
 .node-title-row {
@@ -749,7 +856,7 @@ export default {
   flex: 1;
   min-width: 0;
   color: #303133;
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 700;
   line-height: 1.35;
   overflow: hidden;
@@ -772,7 +879,7 @@ export default {
 
 .node-desc {
   display: block;
-  margin-top: 5px;
+  margin-top: 4px;
   color: #606266;
   font-size: 12px;
   line-height: 1.4;
@@ -785,7 +892,7 @@ export default {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
-  margin-top: 10px;
+  margin-top: 8px;
 }
 
 .state-pill {
@@ -826,6 +933,30 @@ export default {
   transform: translate(-50%, -50%);
 }
 
+.node-hover-card {
+  color: #303133;
+  line-height: 1.5;
+}
+
+.hover-title-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.hover-name {
+  font-size: 14px;
+  font-weight: 700;
+  color: #1f2329;
+}
+
+.hover-line {
+  font-size: 12px;
+  color: #5b6472;
+}
+
 ::v-deep .detail-dialog {
   .el-dialog__header {
     background: #fbfcfd;
@@ -847,12 +978,15 @@ export default {
   }
 
   .node-layer {
-    grid-template-columns: 1fr;
-    gap: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
   }
 
   .node-marker {
-    grid-template-columns: 46px minmax(0, 1fr);
+    position: static;
+    grid-template-columns: 42px minmax(0, 1fr);
+    max-width: none;
     padding: 12px;
   }
 

@@ -9,7 +9,7 @@ export default {
   remoteLogCount: '\u8fdc\u7a0b\u64cd\u4f5c\u8bb0\u5f55',
   remoteDeviceOps: '\u8fdc\u7a0b\u8bbe\u5907\u64cd\u4f5c',
   ownerUser: '\u6240\u5c5e\u7528\u6237',
-  selectUserFirst: '\u8bf7\u5148\u9009\u62e9\u7528\u6237',
+  selectUserFirst: '\u6309\u7528\u6237\u7b5b\u9009',
   sensorNode: '\u4f20\u611f\u8282\u70b9',
   selectNode: '\u8bf7\u9009\u62e9\u8282\u70b9',
   simulateIngest: '\u6a21\u62df\u4f20\u611f\u4e0a\u62a5',

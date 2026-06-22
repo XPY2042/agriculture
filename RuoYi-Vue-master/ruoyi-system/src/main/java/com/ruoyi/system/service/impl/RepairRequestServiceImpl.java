@@ -86,6 +86,12 @@ public class RepairRequestServiceImpl implements IRepairRequestService
     }
 
     @Override
+    public int countRepairRequest(RepairRequest repairRequest)
+    {
+        return repairRequestMapper.countRepairRequest(repairRequest);
+    }
+
+    @Override
     public void checkRepairRequestOwner(RepairRequest repairRequest, Long currentUserId, boolean admin)
     {
         if (admin || repairRequest == null)

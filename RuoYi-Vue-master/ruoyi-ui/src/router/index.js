@@ -188,6 +188,20 @@ export const dynamicRoutes = [
         meta: { title: '维修统计', activeMenu: '/repair/statistics' }
       }
     ]
+  },
+  {
+    path: '/report/statistics',
+    component: Layout,
+    hidden: true,
+    permissions: ['report:statistics:view', 'repair:admin:list', 'repair:tech:list', 'agri:monitor:view'],
+    children: [
+      {
+        path: '',
+        component: () => import('@/views/report/statistics/index'),
+        name: 'ReportStatisticsDirect',
+        meta: { title: '报表统计', activeMenu: '/agri/reportStatistics' }
+      }
+    ]
   }
 ]
 

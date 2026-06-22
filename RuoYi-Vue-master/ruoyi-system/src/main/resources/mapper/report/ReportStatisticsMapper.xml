@@ -1,0 +1,344 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.system.mapper.ReportStatisticsMapper">
+
+    <sql id="deviceTypeExpr">
+        case
+            when n.node_name like '%土壤%' then '土壤传感器'
+            when n.node_name like '%环境%' then '环境监测设备'
+            when n.node_name like '%温室%' then '温室监测设备'
+            when n.node_name like '%光照%' then '光照监测设备'
+            else '其他设备'
+        end
+    </sql>
+
+    <sql id="alarmUserJoin">
+        convert(a.handle_by using utf8mb4) collate utf8mb4_general_ci =
+        convert(t.user_name using utf8mb4) collate utf8mb4_general_ci
+    </sql>
+
+    <sql id="repairFilter">
+        <if test="beginTime != null and beginTime != ''">
+            and r.create_time &gt;= #{beginTime}
+        </if>
+        <if test="endTime != null and endTime != ''">
+            and r.create_time &lt;= #{endTime}
+        </if>
+        <if test="farmName != null and farmName != ''">
+            and n.create_by like concat('%', #{farmName}, '%')
+        </if>
+        <if test="plotLocation != null and plotLocation != ''">
+            and n.plot_location like concat('%', #{plotLocation}, '%')
+        </if>
+        <if test="deviceType != null and deviceType != ''">
+            and (<include refid="deviceTypeExpr"/>) = #{deviceType}
+        </if>
+        <if test="nodeCode != null and nodeCode != ''">
+            and n.node_code like concat('%', #{nodeCode}, '%')
+        </if>
+        <if test="personName != null and personName != ''">
+            and (t.user_name = #{personName} or t.nick_name like concat('%', #{personName}, '%'))
+        </if>
+    </sql>
+
+    <sql id="alarmFilter">
+        <if test="beginTime != null and beginTime != ''">
+            and a.alarm_time &gt;= #{beginTime}
+        </if>
+        <if test="endTime != null and endTime != ''">
+            and a.alarm_time &lt;= #{endTime}
+        </if>
+        <if test="farmName != null and farmName != ''">
+            and convert(n.create_by using utf8mb4) collate utf8mb4_general_ci like concat('%', #{farmName}, '%')
+        </if>
+        <if test="plotLocation != null and plotLocation != ''">
+            and convert(n.plot_location using utf8mb4) collate utf8mb4_general_ci like concat('%', #{plotLocation}, '%')
+        </if>
+        <if test="deviceType != null and deviceType != ''">
+            and convert((<include refid="deviceTypeExpr"/>) using utf8mb4) collate utf8mb4_general_ci = #{deviceType}
+        </if>
+        <if test="nodeCode != null and nodeCode != ''">
+            and convert(n.node_code using utf8mb4) collate utf8mb4_general_ci like concat('%', #{nodeCode}, '%')
+        </if>
+        <if test="personName != null and personName != ''">
+            and (
+                convert(a.handle_by using utf8mb4) collate utf8mb4_general_ci = #{personName}
+                or convert(t.nick_name using utf8mb4) collate utf8mb4_general_ci like concat('%', #{personName}, '%')
+            )
+        </if>
+        <if test="alarmLevel != null and alarmLevel != ''">
+            and a.alarm_level = #{alarmLevel}
+        </if>
+    </sql>
+
+    <select id="selectRepairSummary" parameterType="com.ruoyi.system.domain.vo.ReportQueryVo" resultType="com.ruoyi.system.domain.vo.RepairReportSummaryVo">
+        select
+            count(*) as totalCount,
+            sum(case when r.status = '0' then 1 else 0 end) as pendingCount,
+            sum(case when r.status = '1' then 1 else 0 end) as processingCount,
+            sum(case when r.status = '2' then 1 else 0 end) as doneCount,
+            sum(case when r.status = '3' then 1 else 0 end) as cancelledCount,
+            sum(case
+                    when r.status = '0' and timestampdiff(hour, r.create_time, now()) &gt; 24 then 1
+                    when r.status = '1' and timestampdiff(hour, coalesce(r.accepted_at, r.create_time), now()) &gt; 72 then 1
+                    else 0
+                end) as timeoutCount,
+            round(avg(case when r.accepted_at is not null then timestampdiff(minute, r.create_time, r.accepted_at) end) / 60, 2) as avgResponseHours,
+            round(avg(case
+                when r.status = '2' and r.repair_finish_at is not null and r.accepted_at is not null then timestampdiff(minute, r.accepted_at, r.repair_finish_at)
+                when r.status = '2' and r.repair_finish_at is not null then timestampdiff(minute, r.create_time, r.repair_finish_at)
+                end) / 60, 2) as avgCompleteHours,
+            0 as timeoutRate
+        from repair_request r
+        left join agri_sensor_node n on r.node_id = n.node_id
+        left join sys_user t on r.technician_id = t.user_id
+        where r.del_flag = '0'
+        <include refid="repairFilter"/>
+    </select>
+
+    <select id="selectRepairTrend" parameterType="com.ruoyi.system.domain.vo.ReportQueryVo" resultType="com.ruoyi.system.domain.vo.ReportTrendVo">
+        select
+            date_format(r.create_time, '${groupFormat}') as label,
+            count(*) as totalCount,
+            sum(case when r.status = '0' then 1 else 0 end) as pendingCount,
+            sum(case when r.status = '1' then 1 else 0 end) as processingCount,
+            sum(case when r.status = '2' then 1 else 0 end) as doneCount,
+            sum(case when r.status = '3' then 1 else 0 end) as cancelledCount,
+            sum(case
+                    when r.status = '0' and timestampdiff(hour, r.create_time, now()) &gt; 24 then 1
+                    when r.status = '1' and timestampdiff(hour, coalesce(r.accepted_at, r.create_time), now()) &gt; 72 then 1
+                    else 0
+                end) as timeoutCount
+        from repair_request r
+        left join agri_sensor_node n on r.node_id = n.node_id
+        left join sys_user t on r.technician_id = t.user_id
+        where r.del_flag = '0'
+        <include refid="repairFilter"/>
+        group by date_format(r.create_time, '${groupFormat}')
+        order by min(r.create_time)
+    </select>
+
+    <select id="selectRepairByDeviceType" parameterType="com.ruoyi.system.domain.vo.ReportQueryVo" resultType="com.ruoyi.system.domain.vo.ReportSeriesVo">
+        select
+            <include refid="deviceTypeExpr"/> as label,
+            count(*) as count
+        from repair_request r
+        left join agri_sensor_node n on r.node_id = n.node_id
+        left join sys_user t on r.technician_id = t.user_id
+        where r.del_flag = '0'
+        <include refid="repairFilter"/>
+        group by <include refid="deviceTypeExpr"/>
+        order by count desc
+    </select>
+
+    <select id="selectRepairByFaultType" parameterType="com.ruoyi.system.domain.vo.ReportQueryVo" resultType="com.ruoyi.system.domain.vo.ReportSeriesVo">
+        select
+            coalesce(nullif(r.title, ''), '未分类') as label,
+            count(*) as count
+        from repair_request r
+        left join agri_sensor_node n on r.node_id = n.node_id
+        left join sys_user t on r.technician_id = t.user_id
+        where r.del_flag = '0'
+        <include refid="repairFilter"/>
+        group by coalesce(nullif(r.title, ''), '未分类')
+        order by count desc
+        limit 10
+    </select>
+
+    <select id="selectRepairByTechnician" parameterType="com.ruoyi.system.domain.vo.ReportQueryVo" resultType="com.ruoyi.system.domain.vo.ReportSeriesVo">
+        select
+            coalesce(t.nick_name, t.user_name, '未指派') as label,
+            count(*) as count,
+            sum(case when r.status = '2' then 1 else 0 end) as doneCount,
+            round(sum(case when r.status = '2' then 1 else 0 end) * 100 / count(*), 2) as ratio,
+            round(avg(case
+                when r.status = '2' and r.repair_finish_at is not null and r.accepted_at is not null then timestampdiff(minute, r.accepted_at, r.repair_finish_at)
+                when r.status = '2' and r.repair_finish_at is not null then timestampdiff(minute, r.create_time, r.repair_finish_at)
+                end) / 60, 2) as avgHours
+        from repair_request r
+        left join agri_sensor_node n on r.node_id = n.node_id
+        left join sys_user t on r.technician_id = t.user_id
+        where r.del_flag = '0'
+          and r.technician_id is not null
+        <include refid="repairFilter"/>
+        group by coalesce(t.nick_name, t.user_name, '未指派')
+        order by count desc
+        limit 10
+    </select>
+
+    <select id="selectRepairDeviceTop" parameterType="com.ruoyi.system.domain.vo.ReportQueryVo" resultType="com.ruoyi.system.domain.vo.ReportSeriesVo">
+        select
+            coalesce(n.node_name, '未关联设备') as label,
+            coalesce(n.node_code, '--') as code,
+            count(*) as count
+        from repair_request r
+        left join agri_sensor_node n on r.node_id = n.node_id
+        left join sys_user t on r.technician_id = t.user_id
+        where r.del_flag = '0'
+        <include refid="repairFilter"/>
+        group by coalesce(n.node_name, '未关联设备'), coalesce(n.node_code, '--')
+        order by count desc
+        limit 10
+    </select>
+
+    <select id="selectAlarmSummary" parameterType="com.ruoyi.system.domain.vo.ReportQueryVo" resultType="com.ruoyi.system.domain.vo.AlarmReportSummaryVo">
+        select
+            count(*) as totalCount,
+            sum(case when a.status = '0' then 1 else 0 end) as unconfirmedCount,
+            sum(case when a.status = '1' then 1 else 0 end) as confirmedCount,
+            0 as processingCount,
+            0 as recoveredCount,
+            0 as falsePositiveCount,
+            round(avg(case when a.status = '1' and a.handle_time is not null then timestampdiff(minute, a.alarm_time, a.handle_time) end) / 60, 2) as avgConfirmHours,
+            null as avgRecoverHours
+        from agri_alarm_record a
+        left join agri_sensor_node n on a.node_id = n.node_id
+        left join sys_user t on <include refid="alarmUserJoin"/>
+        where 1 = 1
+        <include refid="alarmFilter"/>
+    </select>
+
+    <select id="selectAlarmTrend" parameterType="com.ruoyi.system.domain.vo.ReportQueryVo" resultType="com.ruoyi.system.domain.vo.ReportTrendVo">
+        select
+            date_format(a.alarm_time, '${groupFormat}') as label,
+            count(*) as totalCount,
+            sum(case when a.status = '0' then 1 else 0 end) as unconfirmedCount,
+            sum(case when a.status = '1' then 1 else 0 end) as confirmedCount,
+            0 as recoveredCount,
+            0 as falsePositiveCount
+        from agri_alarm_record a
+        left join agri_sensor_node n on a.node_id = n.node_id
+        left join sys_user t on <include refid="alarmUserJoin"/>
+        where 1 = 1
+        <include refid="alarmFilter"/>
+        group by date_format(a.alarm_time, '${groupFormat}')
+        order by min(a.alarm_time)
+    </select>
+
+    <select id="selectAlarmLevelShare" parameterType="com.ruoyi.system.domain.vo.ReportQueryVo" resultType="com.ruoyi.system.domain.vo.ReportSeriesVo">
+        select
+            case when a.alarm_level = '1' then '严重'
+                 when a.alarm_level = '2' then '警告'
+                 else '未知' end as label,
+            a.alarm_level as code,
+            count(*) as count
+        from agri_alarm_record a
+        left join agri_sensor_node n on a.node_id = n.node_id
+        left join sys_user t on <include refid="alarmUserJoin"/>
+        where 1 = 1
+        <include refid="alarmFilter"/>
+        group by a.alarm_level
+        order by a.alarm_level
+    </select>
+
+    <select id="selectAlarmByDeviceType" parameterType="com.ruoyi.system.domain.vo.ReportQueryVo" resultType="com.ruoyi.system.domain.vo.ReportSeriesVo">
+        select
+            <include refid="deviceTypeExpr"/> as label,
+            count(*) as count
+        from agri_alarm_record a
+        left join agri_sensor_node n on a.node_id = n.node_id
+        left join sys_user t on <include refid="alarmUserJoin"/>
+        where 1 = 1
+        <include refid="alarmFilter"/>
+        group by <include refid="deviceTypeExpr"/>
+        order by count desc
+    </select>
+
+    <select id="selectAlarmByArea" parameterType="com.ruoyi.system.domain.vo.ReportQueryVo" resultType="com.ruoyi.system.domain.vo.ReportSeriesVo">
+        select
+            coalesce(nullif(n.plot_location, ''), '未设置区域') as label,
+            count(*) as count
+        from agri_alarm_record a
+        left join agri_sensor_node n on a.node_id = n.node_id
+        left join sys_user t on <include refid="alarmUserJoin"/>
+        where 1 = 1
+        <include refid="alarmFilter"/>
+        group by coalesce(nullif(n.plot_location, ''), '未设置区域')
+        order by count desc
+        limit 10
+    </select>
+
+    <select id="selectAlarmDeviceTop" parameterType="com.ruoyi.system.domain.vo.ReportQueryVo" resultType="com.ruoyi.system.domain.vo.ReportSeriesVo">
+        select
+            coalesce(n.node_name, '未关联设备') as label,
+            coalesce(n.node_code, '--') as code,
+            count(*) as count
+        from agri_alarm_record a
+        left join agri_sensor_node n on a.node_id = n.node_id
+        left join sys_user t on <include refid="alarmUserJoin"/>
+        where 1 = 1
+        <include refid="alarmFilter"/>
+        group by coalesce(n.node_name, '未关联设备'), coalesce(n.node_code, '--')
+        order by count desc
+        limit 10
+    </select>
+
+    <select id="selectAlarmRepeatedDeviceTop" parameterType="com.ruoyi.system.domain.vo.ReportQueryVo" resultType="com.ruoyi.system.domain.vo.ReportSeriesVo">
+        select
+            x.label,
+            x.code,
+            sum(x.repeatCount) as count
+        from (
+            select
+                coalesce(n.node_name, '未关联设备') as label,
+                coalesce(n.node_code, '--') as code,
+                greatest(count(*) - 1, 0) as repeatCount
+            from agri_alarm_record a
+            left join agri_sensor_node n on a.node_id = n.node_id
+            left join sys_user t on <include refid="alarmUserJoin"/>
+            where 1 = 1
+            <include refid="alarmFilter"/>
+            group by a.node_id, a.metric_code, date_format(a.alarm_time, '%Y-%m-%d %H')
+        ) x
+        where x.repeatCount &gt; 0
+        group by x.label, x.code
+        order by count desc
+        limit 10
+    </select>
+
+    <select id="selectFarmOptions" resultType="com.ruoyi.system.domain.vo.ReportOptionVo">
+        select distinct create_by as label, create_by as value
+        from agri_sensor_node
+        where del_flag = '0'
+          and create_by is not null
+          and create_by != ''
+        order by create_by
+    </select>
+
+    <select id="selectPlotOptions" resultType="com.ruoyi.system.domain.vo.ReportOptionVo">
+        select distinct plot_location as label, plot_location as value
+        from agri_sensor_node
+        where del_flag = '0'
+          and plot_location is not null
+          and plot_location != ''
+        order by plot_location
+    </select>
+
+    <select id="selectDeviceTypeOptions" resultType="com.ruoyi.system.domain.vo.ReportOptionVo">
+        select x.label, x.value
+        from (
+            select distinct <include refid="deviceTypeExpr"/> as label, <include refid="deviceTypeExpr"/> as value
+            from agri_sensor_node n
+            where n.del_flag = '0'
+        ) x
+        order by x.label
+    </select>
+
+    <select id="selectDeviceCodeOptions" resultType="com.ruoyi.system.domain.vo.ReportOptionVo">
+        select distinct node_code as label, node_code as value
+        from agri_sensor_node
+        where del_flag = '0'
+          and node_code is not null
+          and node_code != ''
+        order by node_code
+    </select>
+
+    <select id="selectPersonOptions" resultType="com.ruoyi.system.domain.vo.ReportOptionVo">
+        select user_name as value,
+               case when nick_name is not null and nick_name != '' then concat(nick_name, ' (', user_name, ')') else user_name end as label
+        from sys_user
+        where del_flag = '0'
+          and status = '0'
+        order by user_name
+    </select>
+</mapper>

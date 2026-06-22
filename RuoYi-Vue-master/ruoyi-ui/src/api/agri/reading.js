@@ -1,4 +1,5 @@
 import request from '@/utils/request'
+import { getWeatherLocation } from '@/utils/agriWeatherLocation'
 
 export function listAgriReading(query) {
   return request({
@@ -23,11 +24,16 @@ export function getTrend(nodeId, hours) {
   })
 }
 
-export function getAdvice(nodeId, hours) {
+export function getAdvice(nodeId, hours, weatherLocation) {
+  const location = weatherLocation || getWeatherLocation()
   return request({
     url: '/agri/reading/advice/' + nodeId,
     method: 'get',
-    params: { hours }
+    params: {
+      hours,
+      refLat: location.latitude,
+      refLon: location.longitude
+    }
   })
 }
 

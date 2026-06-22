@@ -4,7 +4,7 @@
 
 ## 环境与启动
 
-1. **MySQL**：按序号执行 `sql/` 下脚本。必做：`01_create_database.sql`（建库）→ `02_init_schema.sql`（全量初始化，已含智慧农业表与菜单、用户管理；**末尾会删掉「系统管理 / 系统监控 / 系统工具」等框架菜单**，侧边栏只保留「智慧农业」与「用户管理」）。**可选扩展**（按需）：`03_install_agri.sql`（告警中心等农业模块）、`04_install_agri_remote.sql`（远程互联）、`05_install_repair.sql`（报修服务）、`06_install_agri_news.sql`（农业快讯 / 农业新闻 RSS）、`90_seed_multi_users.sql`（批量测试账号，见下方说明）、`91_reset_password_ry.sql`（重置 `ry` 密码为 `123456`）。若远程互联菜单中文乱码，执行 `04_fix_agri_remote_utf8.sql`。**若侧边栏消失或菜单乱码，执行 `93_restore_sidebar_menus.sql` 一键恢复全部菜单**（执行后重新登录）。**导入菜单后请重新登录**（或清空 Redis 中该用户缓存）以便侧边栏刷新。
+1. **MySQL**：按序号执行 `sql/` 下脚本。必做：`01_create_database.sql`（建库）→ `02_init_schema.sql`（全量初始化，已含智慧农业表与菜单、用户管理；**末尾会删掉「系统管理 / 系统监控 / 系统工具」等框架菜单**，侧边栏只保留「智慧农业」与「用户管理」）。**可选扩展**（按需）：`03_install_agri.sql`（告警中心等农业模块）、`04_install_agri_remote.sql`（远程互联）、`05_install_repair.sql`（报修服务）、`06_install_agri_news.sql`（农业快讯 / 农业新闻 RSS）、`90_seed_multi_users.sql`（批量测试账号，见下方说明）、`91_reset_password_ry.sql`（重置 `ry` 密码为 `123456`）。若远程互联菜单中文乱码，执行 `04_fix_agri_remote_utf8.sql`。若旧库传感读数提示缺少 `soil_ph` / `co2_ppm` / `water_ph`，执行 `16_fix_agri_sensor_reading_schema.sql`。**若侧边栏消失或菜单乱码，执行 `93_restore_sidebar_menus.sql` 一键恢复全部菜单**（执行后重新登录）。**导入菜单后请重新登录**（或清空 Redis 中该用户缓存）以便侧边栏刷新。
 2. **Redis**：默认 `localhost:6379`。
 3. **后端**：配置 `ruoyi-admin/src/main/resources/application-druid.yml`（可用环境变量 `MYSQL_USER`、`MYSQL_PASSWORD` 等覆盖），运行 `RuoYiApplication`。
 4. **前端**：在 `ruoyi-ui` 执行 `npm install`、`npm run dev`；页面标题见 `.env.development` 中 `VUE_APP_TITLE`。
